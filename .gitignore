@@ -1,0 +1,69 @@
+# Binarios de Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+playlist-migrator
+
+# Archivos de test
+*.test
+*.out
+*.cover
+
+# Archivos de dependencias
+vendor/
+go.work
+go.work.sum
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos temporales
+tmp/
+temp/
+.tmp/
+
+# Archivos específicos de macOS
+.DS_Store
+
+# Archivos específicos de Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Certificados y claves privadas
+*.pem
+*.key
+*.crt
+*.p12
+
+# Archivos de build
+dist/
+build/
+
+# Coverage reports
+coverage.html
+coverage.out
+
+# Air (live reload) archivos
+tmp/
