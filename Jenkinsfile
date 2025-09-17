@@ -71,33 +71,12 @@ pipeline {
         }
         success {
             echo 'Pipeline succeeded! ✅'
-            script {
-               
-            }
-            // slackSend(
-            //     channel: '#ci-cd',
-            //     color: 'good',
-            //     message: "✅ Build succeeded for ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-            // )
         }
         failure {
             echo 'Pipeline failed! ❌'
-             script {
-              
-            }
-            // slackSend(
-            //     channel: '#ci-cd',
-            //     color: 'danger',
-            //     message: "❌ Build failed for ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-            // )
         }
         unstable {
             echo 'Pipeline is unstable! ⚠️'
-            // slackSend(
-            //     channel: '#ci-cd',
-            //     color: 'warning',
-            //     message: "⚠️ Build unstable for ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-            // )
         }
     }
 }
