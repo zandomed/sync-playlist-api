@@ -12,12 +12,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/zandomed/sync-playlist-api/internal/config"
-	"github.com/zandomed/sync-playlist-api/internal/handlers"
 	SPMiddleware "github.com/zandomed/sync-playlist-api/internal/middleware"
-	"github.com/zandomed/sync-playlist-api/internal/repository"
 	"github.com/zandomed/sync-playlist-api/internal/routes"
-	"github.com/zandomed/sync-playlist-api/internal/services"
-	"github.com/zandomed/sync-playlist-api/pkg/database"
+
+	// "github.com/zandomed/sync-playlist-api/pkg/database"
 	SPLogger "github.com/zandomed/sync-playlist-api/pkg/logger"
 )
 
@@ -29,10 +27,10 @@ func main() {
 	logger := SPLogger.New()
 
 	// Conectar a la base de datos
-	db, err := database.Connect(&cfg.Database)
-	if err != nil {
-		logger.Sugar().Fatalf("Error connecting to database: %v", err)
-	}
+	// db, err := database.Connect(&cfg.Database)
+	// if err != nil {
+	// 	logger.Sugar().Fatalf("Error connecting to database: %v", err)
+	// }
 
 	// Inicializar Echo
 	e := echo.New()
@@ -45,12 +43,12 @@ func main() {
 	e.Use(SPMiddleware.Logger())
 
 	// Inicializar dependencias
-	repos := repository.New(db)
-	services := services.New(repos, cfg)
-	handlers := handlers.New(services, cfg, logger)
+	// repos := repository.New(db)
+	// services := services.New(repos, cfg)
+	// handlers := handlers.New(services, cfg, logger)
 
 	// Configurar rutas
-	routes.Setup(e, handlers, cfg)
+	routes.Setup(e)
 
 	// Servidor con graceful shutdown
 	server := &http.Server{
