@@ -1,19 +1,13 @@
 pipeline {
     agent any
 
-    tools {
-        go 'go-1.25'
-    }
-    
     triggers {
         githubPush()
     }
 
     environment {
-        GO111MODULE = 'on'
-        GOPROXY = 'https://proxy.golang.org,direct'
-        GOSUMDB = 'sum.golang.org'
-        CGO_ENABLED = '0'
+        DOCKER_IMAGE_NAME = 'sync-playlist-api'
+        DOCKER_REGISTRY = env.DOCKER_REGISTRY ?: 'localhost:5000'
     }
 
     options {
@@ -28,89 +22,47 @@ pipeline {
             }
         }
 
-        stage('Dependencies') {
+        stage('Docker Build') {
             steps {
-                echo 'Installing dependencies...'
-                sh 'make deps'
-            }
-        }
-
-        stage('Format Check') {
-            steps {
-                echo 'Checking code formatting...'
+                echo 'Building Docker image...'
                 script {
-                    def formatResult = sh(script: 'make format', returnStatus: true)
-                    if (formatResult != 0) {
-                        error('Code formatting check failed. Please run "make format" locally and commit the changes.')
+                    def imageTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    def latestTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:latest"
+
+                    def image = docker.build(imageTag, ".")
+
+                    if (env.BRANCH_NAME == 'main') {
+                        image.tag('latest')
+                        image.tag(latestTag)
                     }
+
+                    env.DOCKER_IMAGE_TAG = imageTag
                 }
-            }
-        }
-
-        stage('Lint') {
-            steps {
-                echo 'Running linter...'
-                sh 'make lint'
-            }
-            post {
-                always {
-                    // publishHTML([
-                    //     allowMissing: false,
-                    //     alwaysLinkToLastBuild: true,
-                    //     keepAll: true,
-                    //     reportDir: '.',
-                    //     reportFiles: 'golangci-lint-report.xml',
-                    //     reportName: 'Lint Report'
-                    // ])
-                }
-            }
-        }
-
-        // stage('Test') {
-        //     steps {
-        //         echo 'Running tests...'
-        //         sh 'make test-coverage'
-        //     }
-        //     post {
-        //         always {
-        //             // publishHTML([
-        //             //     allowMissing: false,
-        //             //     alwaysLinkToLastBuild: true,
-        //             //     keepAll: true,
-        //             //     reportDir: '.',
-        //             //     reportFiles: 'coverage.html',
-        //             //     reportName: 'Coverage Report'
-        //             // ])
-        //         }
-        //     }
-        // }
-
-        stage('Build') {
-            steps {
-                echo 'Building application...'
-                sh 'make build'
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'dist/*', fingerprint: true
+                    echo 'Docker image built successfully'
                 }
             }
         }
 
-        // stage('Docker Build') {
+        // stage('Docker Push') {
         //     when {
         //         anyOf {
         //             branch 'main'
         //             branch 'develop'
-        //             changeRequest()
         //         }
         //     }
         //     steps {
-        //         echo 'Building Docker image...'
+        //         echo 'Pushing Docker image to registry...'
         //         script {
-        //             def image = docker.build("sync-playlist-api:${env.BUILD_NUMBER}")
-        //             if (env.BRANCH_NAME == 'main') {
-        //                 image.tag('latest')
+        //             docker.withRegistry("http://${env.DOCKER_REGISTRY}") {
+        //                 def image = docker.image(env.DOCKER_IMAGE_TAG)
+        //                 image.push()
+
+        //                 if (env.BRANCH_NAME == 'main') {
+        //                     image.push('latest')
+        //                 }
         //             }
         //         }
         //     }
