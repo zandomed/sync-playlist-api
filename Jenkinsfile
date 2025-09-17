@@ -7,7 +7,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'sync-playlist-api'
-        DOCKER_REGISTRY = 'localhost:5000'
+        DOCKER_REGISTRY = 'https://registry.hub.zandome.dev'
     }
 
     options {
