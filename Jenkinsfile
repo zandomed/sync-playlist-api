@@ -1,14 +1,10 @@
 pipeline {
-    agent any
+    agent { dockerfile true }
 
     triggers {
         githubPush()
     }
 
-    environment {
-        DOCKER_IMAGE_NAME = 'sync-playlist-api'
-        DOCKER_REGISTRY = 'https://registry.hub.zandome.dev'
-    }
 
     options {
         githubProjectProperty(projectUrlStr: 'https://github.com/zandomed/sync-playlist-api')
@@ -33,7 +29,7 @@ pipeline {
 
                     if (env.BRANCH_NAME == 'main') {
                         image.tag('latest')
-                        image.tag(latestTag)
+                        image.tag(env.BUILD_NUMBER)
                     }
 
                     env.DOCKER_IMAGE_TAG = imageTag
