@@ -31,7 +31,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Error connecting to database:", err)
 	}
-	defer db.Close()
+
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing database connection: %v", err)
+		}
+	}()
 
 	// Crear tabla de migraciones si no existe
 	if err := createMigrationsTable(db); err != nil {
@@ -210,7 +215,12 @@ func applyMigration(db *sqlx.DB, filename, version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Printf("Error rolling back transaction: %v", err)
+		}
+	}()
 
 	// Ejecutar migración
 	if _, err := tx.Exec(string(content)); err != nil {

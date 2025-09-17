@@ -93,7 +93,15 @@ lint: ## Run linter (requires golangci-lint)
 
 format: ## Format code
 	@echo "${YELLOW}Formatting code...${NC}"
-	@go fmt ./...
+	@if command -v golangci-lint > /dev/null; then \
+		echo "${YELLOW}Using golangci-lint fmt...${NC}"; \
+		golangci-lint fmt; \
+	else \
+		echo "${RED}golangci-lint is not installed${NC}"; \
+		echo "${YELLOW}Install it from: https://golangci-lint.run/usage/install/${NC}"; \
+		echo "${YELLOW}Running go fmt instead...${NC}"; \
+		go fmt ./...; \
+	fi
 	@echo "${GREEN}✅ Code formatted${NC}"
 
 check: ## Check installed tools

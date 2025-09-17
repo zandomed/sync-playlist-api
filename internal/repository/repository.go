@@ -424,10 +424,11 @@ func (r *migrationRepository) UpdateStatus(id uuid.UUID, status models.Migration
 
 	args := []interface{}{id, status, errorMsg, now}
 
-	if status == models.MigrationStatusRunning {
+	switch status {
+	case models.MigrationStatusRunning:
 		query += `, started_at = $5`
 		args = append(args, now)
-	} else if status == models.MigrationStatusCompleted || status == models.MigrationStatusFailed {
+	case models.MigrationStatusCompleted, models.MigrationStatusFailed:
 		query += `, completed_at = $5`
 		args = append(args, now)
 	}

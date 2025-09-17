@@ -175,7 +175,12 @@ func (h *MigrationHandler) WebSocketHandler(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	defer ws.Close()
+
+	defer func() {
+		if err := ws.Close(); err != nil {
+			h.logger.Sugar().Errorf("Error closing websocket: %v", err)
+		}
+	}()
 
 	// TODO: En una implementación real, aquí necesitarías:
 	// 1. Verificar autenticación via token en query params o headers
@@ -222,7 +227,10 @@ func (h *MigrationHandler) WebSocketHandler(c echo.Context) error {
 					"status":  migration.Status,
 					"message": "Migration completed",
 				}
-				ws.WriteJSON(finalMessage)
+				if err := ws.WriteJSON(finalMessage); err != nil {
+					h.logger.Sugar().Errorf("Failed to write websocket message: %v", err)
+					return nil
+				}
 				return nil
 			}
 

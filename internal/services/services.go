@@ -314,7 +314,9 @@ func (s *migrationService) ProcessMigration(ctx context.Context, migrationID uui
 		select {
 		case <-ctx.Done():
 			// Contexto cancelado
-			s.migrationRepo.UpdateStatus(migrationID, models.MigrationStatusCancelled, "Context cancelled")
+			if err := s.migrationRepo.UpdateStatus(migrationID, models.MigrationStatusCancelled, "Context cancelled"); err != nil {
+				return fmt.Errorf("failed to update migration status: %w", err)
+			}
 			return ctx.Err()
 		default:
 			// Simular procesamiento de track
@@ -323,15 +325,21 @@ func (s *migrationService) ProcessMigration(ctx context.Context, migrationID uui
 
 			if success {
 				successful++
-				s.migrationRepo.UpdateTrackStatus(trackMigration.ID, models.MigrationTrackStatusSuccess, "target_id_placeholder", "")
+				if err := s.migrationRepo.UpdateTrackStatus(trackMigration.ID, models.MigrationTrackStatusSuccess, "target_id_placeholder", ""); err != nil {
+					return fmt.Errorf("failed to update track status: %w", err)
+				}
 			} else {
 				failed++
-				s.migrationRepo.UpdateTrackStatus(trackMigration.ID, models.MigrationTrackStatusFailed, "", "Failed to migrate track")
+				if err := s.migrationRepo.UpdateTrackStatus(trackMigration.ID, models.MigrationTrackStatusFailed, "", "Failed to migrate track"); err != nil {
+					return fmt.Errorf("failed to update track status: %w", err)
+				}
 			}
 
 			// Actualizar progreso
 			processed := i + 1
-			s.migrationRepo.UpdateProgress(migrationID, processed, successful, failed)
+			if err := s.migrationRepo.UpdateProgress(migrationID, processed, successful, failed); err != nil {
+				return fmt.Errorf("failed to update migration progress: %w", err)
+			}
 		}
 	}
 
