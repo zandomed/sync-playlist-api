@@ -16,6 +16,10 @@ pipeline {
         CGO_ENABLED = '0'
     }
 
+    options {
+        githubProjectProperty(projectUrlStr: 'https://github.com/zandomed/sync-playlist-api')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -120,6 +124,13 @@ pipeline {
         }
         success {
             echo 'Pipeline succeeded! ✅'
+            script {
+                githubNotify(
+                    status: 'SUCCESS',
+                    description: 'Build completed successfully',
+                    context: 'ci/jenkins/build'
+                )
+            }
             // slackSend(
             //     channel: '#ci-cd',
             //     color: 'good',
@@ -128,6 +139,13 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed! ❌'
+             script {
+                githubNotify(
+                    status: 'FAILURE',
+                    description: 'Build failed',
+                    context: 'ci/jenkins/build'
+                )
+            }
             // slackSend(
             //     channel: '#ci-cd',
             //     color: 'danger',
