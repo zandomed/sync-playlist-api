@@ -5,115 +5,150 @@ APP_NAME=sync-playlist
 BINARY_NAME=main
 DOCKER_COMPOSE=docker-compose
 
-# Colores para output
+# Colors for output
 RED=\033[0;31m
 GREEN=\033[0;32m
 YELLOW=\033[1;33m
 BLUE=\033[0;34m
 NC=\033[0m # No Color
 
-help: ## Mostrar esta ayuda
-	@echo "${BLUE}${APP_NAME} - Comandos disponibles:${NC}"
+help: ## Show this help
+	@echo "${BLUE}${APP_NAME} - Available commands:${NC}"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  ${GREEN}%-15s${NC} %s\n", $$1, $$2}'
 
-build: ## Compilar la aplicación
-	@echo "${YELLOW}Compilando ${APP_NAME}...${NC}"
+build: ## Build the application
+	@echo "${YELLOW}Building ${APP_NAME}...${NC}"
 	@go build -o dist/${BINARY_NAME} cmd/server/main.go
-	@echo "${GREEN}✅ Compilación completada${NC}"
+	@echo "${GREEN}✅ Build completed${NC}"
 
-run: build ## Compilar y ejecutar la aplicación
-	@echo "${YELLOW}Ejecutando ${APP_NAME}...${NC}"
+run: build ## Build and run the application
+	@echo "${YELLOW}Running ${APP_NAME}...${NC}"
 	@./dist/${BINARY_NAME}
 
-dev: ## Ejecutar en modo desarrollo con live reload (requiere air)
-	@echo "${YELLOW}Ejecutando en modo desarrollo...${NC}"
+dev: ## Run in development mode with live reload (requires air)
+	@echo "${YELLOW}Running in development mode...${NC}"
 	@if command -v air > /dev/null; then \
-		air; \
+		air -c ./.air.toml; \
 	else \
-		echo "${RED}Air no está instalado. Instalalo con: go install github.com/air-verse/air@latest${NC}"; \
-		echo "${YELLOW}Ejecutando sin live reload...${NC}"; \
+		echo "${RED}Air is not installed. Install it with: go install github.com/air-verse/air@latest${NC}"; \
+		echo "${YELLOW}Running without live reload...${NC}"; \
 		go run cmd/server/main.go; \
 	fi
 
-test: ## Ejecutar tests
-	@echo "${YELLOW}Ejecutando tests...${NC}"
+test: ## Run tests
+	@echo "${YELLOW}Running tests...${NC}"
 	@go test -v ./...
-	@echo "${GREEN}✅ Tests completados${NC}"
+	@echo "${GREEN}✅ Tests completed${NC}"
 
-test-coverage: ## Ejecutar tests con cobertura
-	@echo "${YELLOW}Ejecutando tests con cobertura...${NC}"
+test-coverage: ## Run tests with coverage
+	@echo "${YELLOW}Running tests with coverage...${NC}"
 	@go test -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out -o coverage.html
-	@echo "${GREEN}✅ Reporte de cobertura generado en coverage.html${NC}"
+	@echo "${GREEN}✅ Coverage report generated in coverage.html${NC}"
 
-clean: ## Limpiar archivos generados
-	@echo "${YELLOW}Limpiando archivos...${NC}"
-	@rm -f ${BINARY_NAME}
+clean: ## Clean generated files
+	@echo "${YELLOW}Cleaning files...${NC}"
 	@rm -f coverage.out coverage.html
-	@echo "${GREEN}✅ Limpieza completada${NC}"
+	@rm -rf dist/ tmp/
+	@echo "${GREEN}✅ Cleanup completed${NC}"
 
-docker-up: ## Levantar servicios de desarrollo (PostgreSQL y Redis)
-	@echo "${YELLOW}Levantando servicios de desarrollo...${NC}"
+docker-up: ## Start development services (PostgreSQL and Redis)
+	@echo "${YELLOW}Starting development services...${NC}"
 	@${DOCKER_COMPOSE} up -d postgres redis
-	@echo "${GREEN}✅ Servicios levantados${NC}"
+	@echo "${GREEN}✅ Services started${NC}"
 
-docker-full: ## Levantar todos los servicios incluyendo la app
-	@echo "${YELLOW}Levantando todos los servicios...${NC}"
+docker-full: ## Start all services including the app
+	@echo "${YELLOW}Starting all services...${NC}"
 	@${DOCKER_COMPOSE} --profile full up -d
-	@echo "${GREEN}✅ Todos los servicios levantados${NC}"
+	@echo "${GREEN}✅ All services started${NC}"
 
-docker-down: ## Detener servicios de desarrollo
-	@echo "${YELLOW}Deteniendo servicios...${NC}"
+docker-down: ## Stop development services
+	@echo "${YELLOW}Stopping services...${NC}"
 	@${DOCKER_COMPOSE} down
-	@echo "${GREEN}✅ Servicios detenidos${NC}"
+	@echo "${GREEN}✅ Services stopped${NC}"
 
-docker-logs: ## Ver logs de los servicios
+docker-logs: ## View service logs
 	@${DOCKER_COMPOSE} logs -f
 
-docker-clean: ## Limpiar volúmenes de Docker
-	@echo "${YELLOW}Limpiando volúmenes de Docker...${NC}"
+docker-clean: ## Clean Docker volumes
+	@echo "${YELLOW}Cleaning Docker volumes...${NC}"
 	@${DOCKER_COMPOSE} down -v
-	@echo "${GREEN}✅ Volúmenes limpiados${NC}"
+	@echo "${GREEN}✅ Volumes cleaned${NC}"
 
-deps: ## Instalar dependencias
-	@echo "${YELLOW}Instalando dependencias...${NC}"
+deps: ## Install dependencies
+	@echo "${YELLOW}Installing dependencies...${NC}"
 	@go mod tidy
 	@go mod download
-	@echo "${GREEN}✅ Dependencias instaladas${NC}"
+	@echo "${GREEN}✅ Dependencies installed${NC}"
 
-lint: ## Ejecutar linter (requiere golangci-lint)
-	@echo "${YELLOW}Ejecutando linter...${NC}"
+lint: ## Run linter (requires golangci-lint)
+	@echo "${YELLOW}Running linter...${NC}"
 	@if command -v golangci-lint > /dev/null; then \
 		golangci-lint run; \
 	else \
-		echo "${RED}golangci-lint no está instalado${NC}"; \
-		echo "${YELLOW}Instálalo desde: https://golangci-lint.run/usage/install/${NC}"; \
+		echo "${RED}golangci-lint is not installed${NC}"; \
+		echo "${YELLOW}Install it from: https://golangci-lint.run/usage/install/${NC}"; \
 	fi
 
-format: ## Formatear código
-	@echo "${YELLOW}Formateando código...${NC}"
+format: ## Format code
+	@echo "${YELLOW}Formatting code...${NC}"
 	@go fmt ./...
-	@echo "${GREEN}✅ Código formateado${NC}"
+	@echo "${GREEN}✅ Code formatted${NC}"
 
-install-tools: ## Instalar herramientas de desarrollo
-	@echo "${YELLOW}Instalando herramientas de desarrollo...${NC}"
+check: ## Check installed tools
+	@echo "${BLUE}🔍 Checking installed tools:${NC}"
+	@echo ""
+	@echo "${BLUE}Go:${NC}"
+	@if command -v go > /dev/null; then \
+		echo "  ${GREEN}✅ $$(go version)${NC}"; \
+	else \
+		echo "  ${RED}❌ Go not found${NC}"; \
+	fi
+	@echo "${BLUE}Docker:${NC}"
+	@if command -v docker > /dev/null; then \
+		echo "  ${GREEN}✅ $$(docker --version)${NC}"; \
+	else \
+		echo "  ${RED}❌ Docker not found${NC}"; \
+	fi
+	@echo "${BLUE}Docker Compose:${NC}"
+	@if command -v docker-compose > /dev/null; then \
+		echo "  ${GREEN}✅ $$(docker-compose --version)${NC}"; \
+	else \
+		echo "  ${RED}❌ Docker Compose not found${NC}"; \
+	fi
+	@echo "${BLUE}Air (live reload):${NC}"
+	@if command -v air > /dev/null; then \
+		echo "  ${GREEN}✅ Air found${NC}"; \
+	else \
+		echo "  ${YELLOW}❌ Air not found (run: go install github.com/air-verse/air@latest)${NC}"; \
+	fi
+	@echo "${BLUE}Golangci-lint:${NC}"
+	@if command -v golangci-lint > /dev/null; then \
+		echo "  ${GREEN}✅ Golangci-lint found${NC}"; \
+	else \
+		echo "  ${YELLOW}❌ Golangci-lint not found${NC}"; \
+		echo "    ${BLUE}Download from: https://golangci-lint.run/docs/welcome/install/${NC}"; \
+	fi
+
+install-tools: ## Install development tools
+	@echo "${YELLOW}Installing development tools...${NC}"
 	@go install github.com/air-verse/air@latest
-	@echo "${GREEN}✅ Air instalado para live reload${NC}"
+	@echo "${GREEN}✅ Air installed for live reload${NC}"
 
-migrate-up: ## Ejecutar migraciones de base de datos
-	@echo "${YELLOW}Ejecutando migraciones...${NC}"
+migrate-up: ## Run database migrations
+	@echo "${YELLOW}Running migrations...${NC}"
 	@go run cmd/migrate/main.go up
-	@echo "${GREEN}✅ Migraciones completadas${NC}"
+	@echo "${GREEN}✅ Migrations completed${NC}"
 
-migrate-down: ## Rollback última migración
-	@echo "${YELLOW}Haciendo rollback de migración...${NC}"
+migrate-down: ## Rollback last migration
+	@echo "${YELLOW}Rolling back migration...${NC}"
 	@go run cmd/migrate/main.go down
-	@echo "${GREEN}✅ Rollback completado${NC}"
+	@echo "${GREEN}✅ Rollback completed${NC}"
 
-migrate-status: ## Ver estado de migraciones
-	@echo "${YELLOW}Estado de migraciones:${NC}"
+migrate-status: ## View migration status
+	@echo "${YELLOW}Migration status:${NC}"
 	@go run cmd/migrate/main.go status
 
-# Valores por defecto
+# Default values
 .DEFAULT_GOAL := help
