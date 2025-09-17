@@ -18,29 +18,29 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                echo 'Building Docker image...'
-                script {
-                    def imageTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    def latestTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:latest"
+        // stage('Docker Build') {
+        //     steps {
+        //         echo 'Building Docker image...'
+        //         script {
+        //             def imageTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+        //             def latestTag = "${env.DOCKER_REGISTRY}/${env.DOCKER_IMAGE_NAME}:latest"
 
-                    def image = docker.build(imageTag, ".")
+        //             def image = docker.build(imageTag, ".")
 
-                    if (env.BRANCH_NAME == 'main') {
-                        image.tag('latest')
-                        image.tag(env.BUILD_NUMBER)
-                    }
+        //             if (env.BRANCH_NAME == 'main') {
+        //                 image.tag('latest')
+        //                 image.tag(env.BUILD_NUMBER)
+        //             }
 
-                    env.DOCKER_IMAGE_TAG = imageTag
-                }
-            }
-            post {
-                success {
-                    echo 'Docker image built successfully'
-                }
-            }
-        }
+        //             env.DOCKER_IMAGE_TAG = imageTag
+        //         }
+        //     }
+        //     post {
+        //         success {
+        //             echo 'Docker image built successfully'
+        //         }
+        //     }
+        // }
 
         // stage('Docker Push') {
         //     when {
