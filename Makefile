@@ -104,7 +104,7 @@ format: ## Format code
 	fi
 	@echo "${GREEN}✅ Code formatted${NC}"
 
-check: ## Check installed tools
+doctor: ## Check installed tools
 	@echo "${BLUE}🔍 Checking installed tools:${NC}"
 	@echo ""
 	@echo "${BLUE}Go:${NC}"
