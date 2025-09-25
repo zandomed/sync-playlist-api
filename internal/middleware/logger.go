@@ -34,11 +34,7 @@ func Logger() echo.MiddlewareFunc {
 				fields = append(fields, zap.Error(values.Error))
 			}
 
-			if values.Status >= 400 {
-				logger.Info("HTTP Request", fields...)
-			} else {
-				logger.Info("HTTP Request", fields...)
-			}
+			logger.Info("HTTP Request", fields...)
 			return nil
 		},
 	})

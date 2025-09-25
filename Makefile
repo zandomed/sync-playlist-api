@@ -89,6 +89,7 @@ lint: ## Run linter (requires golangci-lint)
 	else \
 		echo "${RED}golangci-lint is not installed${NC}"; \
 		echo "${YELLOW}Install it from: https://golangci-lint.run/usage/install/${NC}"; \
+	#	github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	fi
 
 format: ## Format code
