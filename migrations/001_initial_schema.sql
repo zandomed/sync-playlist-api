@@ -2,6 +2,7 @@
 
 -- Extensión para UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Enum types
 CREATE TYPE providers AS ENUM ('spotify', 'apple', 'google', 'userpass');
@@ -49,8 +50,24 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Function to hash password automatically
+CREATE OR REPLACE FUNCTION hash_password()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only hash password if it's not null and not already hashed (doesn't start with $2a$, $2b$, $2x$, or $2y$)
+    IF NEW.password IS NOT NULL AND NEW.password NOT LIKE '$2_$%' THEN
+        NEW.password = crypt(NEW.password, gen_salt('bf'));
+    END IF;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to hash password before insert/update
+CREATE TRIGGER hash_password_trigger BEFORE INSERT OR UPDATE ON accounts
+    FOR EACH ROW EXECUTE FUNCTION hash_password();

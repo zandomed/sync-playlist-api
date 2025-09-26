@@ -25,15 +25,21 @@ func NewAuthHandler(s services.AuthService, cfg *config.Config, logger *logger.L
 }
 
 func (h *AuthHandler) LoginWithPass(c echo.Context) error {
-	// Implementation goes here
 	h.logger.Sugar().Info("LoginWithPass called")
-	return nil
-}
-
-func (h *AuthHandler) LoginWithOAuth(c echo.Context) error {
-	// Implementation goes here
-	h.logger.Sugar().Info("LoginWithOAuth called")
-	return nil
+	req := new(services.LoginRequest)
+	if err := c.Bind(req); err != nil {
+		return sendError(c, http.StatusBadRequest, err, "Invalid request body")
+	}
+	h.logger.Sugar().Infof("Login request: %+v", req)
+	if err := c.Validate(req); err != nil {
+		return sendValidationError(c, http.StatusBadRequest, err)
+	}
+	if resp, err := h.service.LoginWithPass(*req); err != nil {
+		return sendError(c, http.StatusInternalServerError, err, "Failed to login user")
+	} else {
+		h.logger.Sugar().Infof("User logged in successfully: %s", req.Email)
+		return c.JSON(http.StatusOK, resp)
+	}
 }
 
 func (h *AuthHandler) Register(c echo.Context) error {
@@ -51,30 +57,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return sendValidationError(c, http.StatusBadRequest, err)
 	}
 
-	if userID, err := h.service.Register(*req); err != nil {
+	if resp, err := h.service.Register(*req); err != nil {
 		return sendError(c, http.StatusInternalServerError, err, "Failed to register user")
 	} else {
-		h.logger.Sugar().Infof("User registered successfully: %d", userID)
-		return c.JSON(http.StatusCreated, map[string]string{"userID": userID})
+		h.logger.Sugar().Infof("User registered successfully: %d", resp.ID)
+		return c.JSON(http.StatusCreated, resp)
 	}
-}
-
-func (h *AuthHandler) LinkAccount(c echo.Context) error {
-	// Implementation goes here
-	return nil
-}
-
-func (h *AuthHandler) UnlinkAccount(c echo.Context) error {
-	// Implementation goes here
-	return nil
-}
-
-func (h *AuthHandler) ChangePassword(c echo.Context) error {
-	// Implementation goes here
-	return nil
-}
-
-func (h *AuthHandler) ResetPassword(c echo.Context) error {
-	// Implementation goes here
-	return nil
 }

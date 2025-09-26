@@ -6,8 +6,15 @@ meta {
 
 post {
   url: {{URL}}/v1/auth/login
-  body: none
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "email": "miguel@zandome.dev",
+    "password": "123456789"
+  }
 }
 
 settings {
