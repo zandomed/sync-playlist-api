@@ -1,0 +1,16 @@
+{
+  "name": "sync-playlist-api",
+  "version": "1.0.0",
+  "description": "Sync Playlist API - A Go-based API for playlist synchronization",
+  "scripts": {
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "commitlint-last": "commitlint --from HEAD~1 --to HEAD --verbose"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.4.0",
+    "@commitlint/config-conventional": "^18.4.0"
+  },
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"]
+  }
+}

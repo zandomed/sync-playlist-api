@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Git commit-msg hook for conventional commits using commitlint
+
+# Use commitlint to validate commit messages
+exec npx commitlint --edit "$1"

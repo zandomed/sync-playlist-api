@@ -1,4 +1,4 @@
-.PHONY: help build run test clean docker-up docker-down migrate dev
+.PHONY: help build run test clean docker-up docker-down migrate dev commit-setup commit-validate commit-help setup
 
 # Variables
 APP_NAME=sync-playlist
@@ -75,6 +75,19 @@ docker-clean: ## Clean Docker volumes
 	@echo "${YELLOW}Cleaning Docker volumes...${NC}"
 	@${DOCKER_COMPOSE} down -v
 	@echo "${GREEN}✅ Volumes cleaned${NC}"
+
+setup: ## Complete project setup (dependencies, tools, git hooks)
+	@echo "${BLUE}🚀 Setting up ${APP_NAME} project...${NC}"
+	@echo ""
+	@$(MAKE) deps
+	@$(MAKE) install-tools
+	@$(MAKE) commit-setup
+	@echo ""
+	@echo "${GREEN}✅ Project setup completed!${NC}"
+	@echo "${BLUE}You can now run:${NC}"
+	@echo "  ${YELLOW}make dev${NC}       - Start development server"
+	@echo "  ${YELLOW}make test${NC}      - Run tests"
+	@echo "  ${YELLOW}make docker-up${NC} - Start services"
 
 deps: ## Install dependencies
 	@echo "${YELLOW}Installing dependencies...${NC}"
@@ -158,6 +171,41 @@ migrate-down: ## Rollback last migration
 migrate-status: ## View migration status
 	@echo "${YELLOW}Migration status:${NC}"
 	@go run cmd/migrate/main.go status
+
+commit-setup: ## Setup conventional commit hooks
+	@echo "${YELLOW}Setting up conventional commit hooks...${NC}"
+	@echo "${YELLOW}Installing commitlint dependencies...${NC}"
+	@npm install
+	@git config core.hooksPath .githooks
+	@echo "${GREEN}✅ Git hooks configured${NC}"
+	@echo "${BLUE}Hooks will now validate commit messages using commitlint${NC}"
+
+commit-validate: ## Validate the last commit message
+	@echo "${YELLOW}Validating last commit message...${NC}"
+	@npm run commitlint-last
+
+commit-help: ## Show conventional commit format help
+	@echo "${BLUE}Conventional Commit Format:${NC}"
+	@echo ""
+	@echo "${YELLOW}Format:${NC} <type>[optional scope]: <description>"
+	@echo ""
+	@echo "${YELLOW}Types:${NC}"
+	@echo "  ${GREEN}feat${NC}     - A new feature"
+	@echo "  ${GREEN}fix${NC}      - A bug fix"
+	@echo "  ${GREEN}docs${NC}     - Documentation only changes"
+	@echo "  ${GREEN}style${NC}    - Changes that do not affect meaning (white-space, formatting, etc)"
+	@echo "  ${GREEN}refactor${NC} - A code change that neither fixes a bug nor adds a feature"
+	@echo "  ${GREEN}perf${NC}     - A code change that improves performance"
+	@echo "  ${GREEN}test${NC}     - Adding missing tests or correcting existing tests"
+	@echo "  ${GREEN}build${NC}    - Changes that affect the build system or external dependencies"
+	@echo "  ${GREEN}ci${NC}       - Changes to CI configuration files and scripts"
+	@echo "  ${GREEN}chore${NC}    - Other changes that don't modify src or test files"
+	@echo "  ${GREEN}revert${NC}   - Reverts a previous commit"
+	@echo ""
+	@echo "${YELLOW}Examples:${NC}"
+	@echo "  ${GREEN}feat(auth): add user authentication${NC}"
+	@echo "  ${GREEN}fix(api): resolve validation error${NC}"
+	@echo "  ${GREEN}docs: update README with setup instructions${NC}"
 
 # Default values
 .DEFAULT_GOAL := help

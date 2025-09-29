@@ -7,7 +7,7 @@ An application to migrate playlists between music services (Spotify → Apple Mu
 ### 1. Prerequisites
 - Go 1.25+
 - Docker and Docker Compose
-- Make (optional - there are alternatives for each OS)
+- Make (see Windows instructions below if needed)
 
 ### 2. Installation
 ```bash
@@ -15,39 +15,36 @@ An application to migrate playlists between music services (Spotify → Apple Mu
 git clone https://github.com/zandomed/sync-playlist-api
 cd sync-playlist-api
 
-# Method 1: With Make (Unix/Linux/macOS/Windows with Make)
-make deps
-make install-tools
-
-# Method 2: Platform-specific scripts
-## Windows PowerShell
-.\scripts\makefile.ps1 setup
+# Complete setup: dependencies, tools, and git hooks
+make setup
 
 # Configure environment variables
 cp .env.example .env
 # Edit .env with your credentials
 ```
 
+#### Windows Users
+If you're on Windows, you have two options:
+
+**Option 1: WSL (Recommended)**
+1. Install WSL2: `wsl --install` (in PowerShell as Administrator)
+2. Restart your computer
+3. Open WSL terminal and run the make commands above
+4. Access your Windows files from WSL: `cd /mnt/c/Users/YourUsername/...`
+
+**Option 2: Install Make for Windows**
+- Via Chocolatey: `choco install make`
+- Or download from [GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm)
+
 ### 3. Start services
 ```bash
-# With Make
 make docker-up
 make migrate-up
-
-# Or with platform-specific scripts
-## Windows PowerShell
-.\scripts\makefile.ps1 docker-up
-.\scripts\makefile.ps1 migrate
 ```
 
 ### 4. Run the application
 ```bash
-# With Make
 make dev
-
-# Or with platform-specific scripts
-## Windows PowerShell
-.\scripts\makefile.ps1 dev
 ```
 
 The application will be available at `http://localhost:8080`
@@ -80,7 +77,6 @@ The application will be available at `http://localhost:8080`
 
 ## 🛠️ Development Commands
 
-### With Make (Recommended - cross-platform)
 ```bash
 # Development
 make dev          # Run with live reload
@@ -99,26 +95,18 @@ make test         # Run tests
 make test-coverage # Tests with coverage
 make lint         # Linter
 make format       # Format code
-make check-env    # Check installed tools
+make doctor       # Check installed tools
+
+# Git and commits
+make commit-help  # Show conventional commit format
+make commit-validate # Validate last commit message
 
 # Complete Docker
 make docker-full  # Start everything including the app
 make docker-clean # Clean volumes
 ```
 
-### Alternative platform-specific scripts
-
-#### Windows PowerShell
-```powershell
-.\scripts\makefile.ps1 help      # View available commands
-.\scripts\makefile.ps1 setup     # Initial setup
-.\scripts\makefile.ps1 dev       # Development mode
-.\scripts\makefile.ps1 build     # Compile
-.\scripts\makefile.ps1 test      # Run tests
-.\scripts\makefile.ps1 check     # Check tools
-```
-
-> 💡 **Note**: If you have Make installed, use it preferentially as it works the same on all operating systems.
+> 💡 **Windows Users**: Use WSL (recommended) or install Make for Windows to run these commands. See the Windows setup instructions above.
 
 ## 📁 Project Structure
 
@@ -220,10 +208,42 @@ SPOTIFY_CLIENT_SECRET=prod-client-secret
 ## 🤝 Contributing
 
 1. Clone the project
-2. Create feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -am 'Add new feature'`)
-4. Push branch (`git push origin feature/new-feature`)
-5. Create Pull Request
+2. Run initial setup: `make setup`
+3. Create feature branch (`git checkout -b feature/new-feature`)
+4. Make your changes
+5. Commit using conventional commit format:
+   ```bash
+   git commit -m "feat(auth): add user authentication"
+   git commit -m "fix(api): resolve validation error"
+   git commit -m "docs: update README with setup instructions"
+   ```
+6. Push branch (`git push origin feature/new-feature`)
+7. Create Pull Request
+
+### Commit Message Format
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for consistent commit messages:
+
+**Format**: `<type>[optional scope]: <description>`
+
+**Types**:
+- `feat` - A new feature
+- `fix` - A bug fix
+- `docs` - Documentation changes
+- `style` - Code style changes (formatting, etc.)
+- `refactor` - Code refactoring
+- `perf` - Performance improvements
+- `test` - Adding or updating tests
+- `build` - Build system changes
+- `ci` - CI/CD changes
+- `chore` - Other changes
+
+**Examples**:
+- `feat(playlist): add migration progress tracking`
+- `fix(auth): handle expired tokens properly`
+- `docs: add API endpoint documentation`
+
+Use `make commit-help` to see the format guide, or `make commit-validate` to check your last commit.
 
 ## 📄 License
 

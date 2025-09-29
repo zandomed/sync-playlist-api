@@ -67,3 +67,6 @@ coverage.out
 
 # Air (live reload) archivos
 tmp/
+
+# JS packages
+node_modules/
