@@ -1,4 +1,4 @@
--- migrations/001_initial_schema.down.sql
+-- migrations/001_initial_schema/down.sql
 
 -- Drop triggers first (they depend on functions)
 DROP TRIGGER IF EXISTS hash_password_trigger ON accounts;

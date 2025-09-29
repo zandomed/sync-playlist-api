@@ -89,6 +89,7 @@ make docker-down  # Stop services
 make migrate-up   # Apply migrations
 make migrate-down # Rollback migration
 make migrate-status # View status
+make migrate-create NAME=migration_name # Create new migration
 
 # Testing and quality
 make test         # Run tests

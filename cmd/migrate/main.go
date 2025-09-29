@@ -213,13 +213,17 @@ func getMigrationFiles() ([]string, error) {
 	var migrationFiles []string
 	for _, file := range files {
 		if file.IsDir() {
+			// Check if directory contains up.sql file
+			upPath := filepath.Join(migrationsDir, file.Name(), "up.sql")
+			if _, err := os.Stat(upPath); err == nil {
+				migrationFiles = append(migrationFiles, file.Name())
+			}
 			continue
 		}
-		// Solo incluir archivos .up.sql para evitar duplicados
+		// Legacy support: include .up.sql files for backward compatibility
 		if strings.HasSuffix(file.Name(), ".up.sql") {
 			migrationFiles = append(migrationFiles, file.Name())
 		} else if strings.HasSuffix(file.Name(), ".sql") && !strings.Contains(file.Name(), ".up.") && !strings.Contains(file.Name(), ".down.") {
-			// También incluir archivos .sql regulares que no tengan .up. o .down.
 			migrationFiles = append(migrationFiles, file.Name())
 		}
 	}
@@ -248,23 +252,9 @@ func getAppliedMigrations(db *sqlx.DB) (map[string]time.Time, error) {
 }
 
 func applyMigration(db *sqlx.DB, filename, version string) error {
-	// Determinar el archivo correcto a usar
-	var migrationFile string
-	if strings.HasSuffix(filename, ".up.sql") {
-		migrationFile = filename
-	} else {
-		// Para archivos .sql regulares, verificar si existe un .up.sql correspondiente
-		upFile := strings.Replace(filename, ".sql", ".up.sql", 1)
-		upPath := filepath.Join("migrations", upFile)
-		if _, err := os.Stat(upPath); err == nil {
-			migrationFile = upFile
-		} else {
-			migrationFile = filename
-		}
-	}
+	filePath := resolveMigrationFilePath(filename)
 
 	// Leer archivo de migración
-	filePath := filepath.Join("migrations", migrationFile)
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read migration file: %w", err)
@@ -297,6 +287,28 @@ func applyMigration(db *sqlx.DB, filename, version string) error {
 	return tx.Commit()
 }
 
+func resolveMigrationFilePath(filename string) string {
+	// Check if it's a directory-based migration
+	migrationDir := filepath.Join("migrations", filename)
+	if stat, err := os.Stat(migrationDir); err == nil && stat.IsDir() {
+		return filepath.Join(migrationDir, "up.sql")
+	}
+
+	// Legacy support: handle old file-based migrations
+	if strings.HasSuffix(filename, ".up.sql") {
+		return filepath.Join("migrations", filename)
+	}
+
+	// Para archivos .sql regulares, verificar si existe un .up.sql correspondiente
+	upFile := strings.Replace(filename, ".sql", ".up.sql", 1)
+	upPath := filepath.Join("migrations", upFile)
+	if _, err := os.Stat(upPath); err == nil {
+		return upPath
+	}
+
+	return filepath.Join("migrations", filename)
+}
+
 func getVersionFromFilename(filename string) string {
 	// Extraer versión del nombre del archivo
 	// Soporta: "001_initial_schema.sql", "001_initial_schema.up.sql", "001_initial_schema.down.sql"
@@ -317,6 +329,13 @@ func findDownMigrationFile(version string) (string, error) {
 
 	for _, file := range files {
 		if file.IsDir() {
+			// Check if it's a directory-based migration with the correct version
+			if getVersionFromFilename(file.Name()) == version {
+				downPath := filepath.Join(migrationsDir, file.Name(), "down.sql")
+				if _, err := os.Stat(downPath); err == nil {
+					return filepath.Join(file.Name(), "down.sql"), nil
+				}
+			}
 			continue
 		}
 

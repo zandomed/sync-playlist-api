@@ -1,4 +1,4 @@
--- migrations/001_initial_schema.up.sql
+-- migrations/001_initial_schema/up.sql
 
 -- Extensión para UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

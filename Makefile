@@ -172,6 +172,16 @@ migrate-status: ## View migration status
 	@echo "${YELLOW}Migration status:${NC}"
 	@go run cmd/migrate/main.go status
 
+migrate-create: ## Create a new migration (usage: make migrate-create NAME=migration_name)
+	@if [ -z "$(NAME)" ]; then \
+		echo "${RED}Error: NAME parameter is required${NC}"; \
+		echo "${YELLOW}Usage: make migrate-create NAME=migration_name${NC}"; \
+		echo "${YELLOW}Example: make migrate-create NAME=add_user_table${NC}"; \
+		exit 1; \
+	fi
+	@echo "${YELLOW}Creating migration: $(NAME)${NC}"
+	@go run scripts/generate_migration.go $(NAME)
+
 commit-setup: ## Setup conventional commit hooks
 	@echo "${YELLOW}Setting up conventional commit hooks...${NC}"
 	@echo "${YELLOW}Installing commitlint dependencies...${NC}"
