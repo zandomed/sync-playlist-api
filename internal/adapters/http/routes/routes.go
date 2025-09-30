@@ -7,6 +7,8 @@ import (
 )
 
 func SetupRoutes(e *echo.Echo, container *container.Container) {
+	e.Use(middleware.CORS())
+
 	e.GET("/health", container.HealthHandler.GetStatus)
 	e.GET("/", container.HealthHandler.GetStatus)
 	api := e.Group("/v1")
@@ -17,5 +19,9 @@ func SetupRoutes(e *echo.Echo, container *container.Container) {
 	{
 		auth.POST("/register", container.AuthHandler.Register)
 		auth.POST("/login", container.AuthHandler.Login)
+		auth.GET("/google", container.AuthHandler.GoogleAuth)
+		auth.GET("/google/callback", container.AuthHandler.GoogleCallback)
+		auth.GET("/spotify", container.AuthHandler.SpotifyAuth)
+		auth.GET("/spotify/callback", container.AuthHandler.SpotifyCallback)
 	}
 }

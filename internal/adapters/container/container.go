@@ -20,12 +20,17 @@ type Container struct {
 	TokenRepo   repositories.TokenRepository
 
 	// Use Cases
-	RegisterUserUC *authUC.RegisterUserUseCase
-	LoginUserUC    *authUC.LoginUserUseCase
-	GetStatusUC    *healthUC.GetStatusUseCase
+	RegisterUserUC    *authUC.RegisterUserUseCase
+	LoginUserUC       *authUC.LoginUserUseCase
+	GoogleLoginUC     *authUC.GoogleLoginUseCase
+	SpotifyLoginUC    *authUC.SpotifyLoginUseCase
+	LinkSpotifyUC     *authUC.LinkSpotifyAccountUseCase
+	GetStatusUC       *healthUC.GetStatusUseCase
 
 	// Adapters
 	TokenGenerator authUC.TokenGenerator
+	GoogleOAuth    authUC.GoogleOAuthProvider
+	SpotifyOAuth   authUC.SpotifyOAuthProvider
 
 	// Mappers
 	AuthMapper *httpMappers.AuthMapper
@@ -46,8 +51,25 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 		cfg.JWT.RefreshExpirationTime,
 	)
 
+	googleOAuthService := authAdapters.NewGoogleOAuthService(
+		cfg.Google.ClientID,
+		cfg.Google.ClientSecret,
+		cfg.Google.RedirectURL,
+	)
+	googleOAuthAdapter := authAdapters.NewGoogleOAuthAdapter(googleOAuthService)
+
+	spotifyOAuthService := authAdapters.NewSpotifyOAuthService(
+		cfg.Spotify.ClientID,
+		cfg.Spotify.ClientSecret,
+		cfg.Spotify.RedirectURL,
+	)
+	spotifyOAuthAdapter := authAdapters.NewSpotifyOAuthAdapter(spotifyOAuthService)
+
 	registerUserUC := authUC.NewRegisterUserUseCase(userRepo, accountRepo)
 	loginUserUC := authUC.NewLoginUserUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator)
+	googleLoginUC := authUC.NewGoogleLoginUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, googleOAuthAdapter)
+	spotifyLoginUC := authUC.NewSpotifyLoginUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, spotifyOAuthAdapter)
+	linkSpotifyUC := authUC.NewLinkSpotifyAccountUseCase(userRepo, accountRepo, spotifyOAuthAdapter)
 	getStatusUC := healthUC.NewGetStatusUseCase(cfg)
 
 	authMapper := httpMappers.NewAuthMapper()
@@ -55,6 +77,9 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 	authHandler := httpHandlers.NewAuthHandler(
 		registerUserUC,
 		loginUserUC,
+		googleLoginUC,
+		spotifyLoginUC,
+		linkSpotifyUC,
 		authMapper,
 		logger,
 	)
@@ -67,8 +92,13 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 		TokenRepo:      tokenRepo,
 		RegisterUserUC: registerUserUC,
 		LoginUserUC:    loginUserUC,
+		GoogleLoginUC:  googleLoginUC,
+		SpotifyLoginUC: spotifyLoginUC,
+		LinkSpotifyUC:  linkSpotifyUC,
 		GetStatusUC:    getStatusUC,
 		TokenGenerator: tokenGenerator,
+		GoogleOAuth:    googleOAuthAdapter,
+		SpotifyOAuth:   spotifyOAuthAdapter,
 		AuthMapper:     authMapper,
 		AuthHandler:    authHandler,
 		HealthHandler:  healthHandler,

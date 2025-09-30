@@ -1,0 +1,15 @@
+meta {
+  name: Login w/Spotify
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{URL}}/v1/auth/spotify
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

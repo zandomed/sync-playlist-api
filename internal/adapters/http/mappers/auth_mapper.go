@@ -41,3 +41,74 @@ func (m *AuthMapper) ToLoginResponse(ucResponse *auth.LoginUserResponse) *dtos.L
 		UserID:       ucResponse.UserID,
 	}
 }
+
+func (m *AuthMapper) ToGoogleAuthURLRequest(dto *dtos.GoogleAuthURLRequest) *auth.GoogleAuthURLRequest {
+	return &auth.GoogleAuthURLRequest{
+		State: dto.State,
+	}
+}
+
+func (m *AuthMapper) ToGoogleAuthURLResponse(ucResponse *auth.GoogleAuthURLResponse) *dtos.GoogleAuthURLResponse {
+	return &dtos.GoogleAuthURLResponse{
+		URL: ucResponse.URL,
+	}
+}
+
+func (m *AuthMapper) ToGoogleCallbackRequest(dto *dtos.GoogleCallbackRequest) *auth.GoogleCallbackRequest {
+	return &auth.GoogleCallbackRequest{
+		Code:  dto.Code,
+		State: dto.State,
+	}
+}
+
+func (m *AuthMapper) ToGoogleCallbackResponse(ucResponse *auth.GoogleCallbackResponse) *dtos.GoogleCallbackResponse {
+	return &dtos.GoogleCallbackResponse{
+		AccessToken:  ucResponse.AccessToken,
+		RefreshToken: ucResponse.RefreshToken,
+		UserID:       ucResponse.UserID,
+		IsNewUser:    ucResponse.IsNewUser,
+	}
+}
+
+func (m *AuthMapper) ToSpotifyAuthURLRequest(dto *dtos.SpotifyAuthURLRequest) *auth.SpotifyAuthURLRequest {
+	return &auth.SpotifyAuthURLRequest{
+		State: dto.State,
+	}
+}
+
+func (m *AuthMapper) ToSpotifyAuthURLResponse(ucResponse *auth.SpotifyAuthURLResponse) *dtos.SpotifyAuthURLResponse {
+	return &dtos.SpotifyAuthURLResponse{
+		URL: ucResponse.URL,
+	}
+}
+
+func (m *AuthMapper) ToSpotifyCallbackRequest(dto *dtos.SpotifyCallbackRequest) *auth.SpotifyCallbackRequest {
+	return &auth.SpotifyCallbackRequest{
+		Code:  dto.Code,
+		State: dto.State,
+	}
+}
+
+func (m *AuthMapper) ToSpotifyCallbackResponse(ucResponse *auth.SpotifyCallbackResponse) *dtos.SpotifyCallbackResponse {
+	return &dtos.SpotifyCallbackResponse{
+		AccessToken:  ucResponse.AccessToken,
+		RefreshToken: ucResponse.RefreshToken,
+		UserID:       ucResponse.UserID,
+		IsNewUser:    ucResponse.IsNewUser,
+	}
+}
+
+func (m *AuthMapper) ToLinkSpotifyRequest(dto *dtos.LinkSpotifyRequest, userID string) *auth.LinkSpotifyRequest {
+	return &auth.LinkSpotifyRequest{
+		UserID: userID,
+		Code:   dto.Code,
+		State:  dto.State,
+	}
+}
+
+func (m *AuthMapper) ToLinkSpotifyResponse(ucResponse *auth.LinkSpotifyResponse) *dtos.LinkSpotifyResponse {
+	return &dtos.LinkSpotifyResponse{
+		Success: ucResponse.Success,
+		Message: ucResponse.Message,
+	}
+}

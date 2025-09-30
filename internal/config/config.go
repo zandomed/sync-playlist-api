@@ -24,6 +24,7 @@ type Config struct {
 	Redis    RedisConfig
 	Spotify  SpotifyConfig
 	Apple    AppleConfig
+	Google   GoogleConfig
 	JWT      JWTConfig
 }
 
@@ -63,6 +64,12 @@ type AppleConfig struct {
 	KeyID       string
 	PrivateKey  string
 	RedirectURL string
+}
+
+type GoogleConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
 }
 
 type JWTConfig struct {
@@ -128,13 +135,18 @@ func load() (*Config, error) {
 		Spotify: SpotifyConfig{
 			ClientID:     getEnv("SPOTIFY_CLIENT_ID", ""),
 			ClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
-			RedirectURL:  getEnv("SPOTIFY_REDIRECT_URL", "http://localhost:9000/auth/spotify/callback"),
+			RedirectURL:  getEnv("SPOTIFY_REDIRECT_URL", "http://127.0.0.1:8080/v1/auth/spotify/callback"),
 		},
 		Apple: AppleConfig{
 			TeamID:      getEnv("APPLE_TEAM_ID", ""),
 			KeyID:       getEnv("APPLE_KEY_ID", ""),
 			PrivateKey:  getEnv("APPLE_PRIVATE_KEY", ""),
-			RedirectURL: getEnv("APPLE_REDIRECT_URL", "http://localhost:9000/auth/apple/callback"),
+			RedirectURL: getEnv("APPLE_REDIRECT_URL", "http://127.0.0.1:8080/v1/auth/apple/callback"),
+		},
+		Google: GoogleConfig{
+			ClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
+			ClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
+			RedirectURL:  getEnv("GOOGLE_REDIRECT_URL", "http://127.0.0.1:8080/v1/auth/google/callback"),
 		},
 		JWT: JWTConfig{
 			Secret:                getEnv("JWT_SECRET", "your-secret-key"),

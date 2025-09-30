@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,7 +28,11 @@ func main() {
 	defer log.Sync()
 
 	if cfg.Server.Environment == config.Development {
-		log.Sugar().Info("Running in development mode", cfg)
+		if cfgJSON, err := json.MarshalIndent(cfg, "", "  "); err == nil {
+			log.Sugar().Info("Running in development mode", string(cfgJSON))
+		} else {
+			log.Sugar().Info("Running in development mode")
+		}
 	}
 
 	db, err := database.Connect(&cfg.Database)
@@ -42,7 +47,6 @@ func main() {
 	e.HideBanner = true
 	e.Validator = &SPMiddleware.CustomValidator{Validator: validator.New()}
 	e.Use(middleware.RequestID())
-	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
 	routes.SetupRoutes(e, container)

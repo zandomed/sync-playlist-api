@@ -14,6 +14,7 @@ const (
 	UserpassProvider AccountProvider = "userpass"
 	SpotifyProvider  AccountProvider = "spotify"
 	AppleProvider    AccountProvider = "apple"
+	GoogleProvider   AccountProvider = "google"
 )
 
 type Account struct {
@@ -123,7 +124,7 @@ func (a *Account) IsUserpassAccount() bool {
 
 func isValidProvider(provider AccountProvider) bool {
 	switch provider {
-	case UserpassProvider, SpotifyProvider, AppleProvider:
+	case UserpassProvider, SpotifyProvider, AppleProvider, GoogleProvider:
 		return true
 	default:
 		return false

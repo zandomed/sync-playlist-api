@@ -23,6 +23,56 @@ type LoginResponse struct {
 	UserID       string `json:"userID"`
 }
 
+type GoogleAuthURLRequest struct {
+	State string `json:"state"`
+}
+
+type GoogleAuthURLResponse struct {
+	URL string `json:"url"`
+}
+
+type GoogleCallbackRequest struct {
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state"`
+}
+
+type GoogleCallbackResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	UserID       string `json:"userID"`
+	IsNewUser    bool   `json:"isNewUser"`
+}
+
+type SpotifyAuthURLRequest struct {
+	State string `json:"state"`
+}
+
+type SpotifyAuthURLResponse struct {
+	URL string `json:"url"`
+}
+
+type SpotifyCallbackRequest struct {
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state"`
+}
+
+type SpotifyCallbackResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	UserID       string `json:"userID"`
+	IsNewUser    bool   `json:"isNewUser"`
+}
+
+type LinkSpotifyRequest struct {
+	Code  string `json:"code" validate:"required"`
+	State string `json:"state"`
+}
+
+type LinkSpotifyResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
