@@ -8,6 +8,12 @@ import (
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
 )
 
+type ContentTypeAccept string
+
+const (
+	ContentTypeApplicationJson ContentTypeAccept = "application/json"
+)
+
 func SendSuccess(c echo.Context, status int, data interface{}) error {
 	response := dtos.SuccessResponse{
 		Data: data,

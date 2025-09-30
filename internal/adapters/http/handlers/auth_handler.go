@@ -12,13 +12,13 @@ import (
 )
 
 type AuthHandler struct {
-	registerUseCase      *auth.RegisterUserUseCase
-	loginUseCase         *auth.LoginUserUseCase
-	googleLoginUseCase   *auth.GoogleLoginUseCase
-	spotifyLoginUseCase  *auth.SpotifyLoginUseCase
-	linkSpotifyUseCase   *auth.LinkSpotifyAccountUseCase
-	mapper               *mappers.AuthMapper
-	logger               *logger.Logger
+	registerUseCase     *auth.RegisterUserUseCase
+	loginUseCase        *auth.LoginUserUseCase
+	googleLoginUseCase  *auth.GoogleLoginUseCase
+	spotifyLoginUseCase *auth.SpotifyLoginUseCase
+	linkSpotifyUseCase  *auth.LinkSpotifyAccountUseCase
+	mapper              *mappers.AuthMapper
+	logger              *logger.Logger
 }
 
 func NewAuthHandler(
@@ -108,7 +108,13 @@ func (h *AuthHandler) GoogleAuth(c echo.Context) error {
 	}
 
 	h.logger.Sugar().Infof("Generated Google auth URL")
-	return SendSuccess(c, http.StatusOK, h.mapper.ToGoogleAuthURLResponse(response))
+
+	// Check if client accepts JSON
+	acceptHeader := c.Request().Header.Get("Accept")
+	if acceptHeader == string(ContentTypeApplicationJson) || c.Request().Header.Get("Content-Type") == string(ContentTypeApplicationJson) {
+		return SendSuccess(c, http.StatusOK, h.mapper.ToGoogleAuthURLResponse(response))
+	}
+	return c.Redirect(http.StatusFound, response.URL)
 }
 
 func (h *AuthHandler) GoogleCallback(c echo.Context) error {
@@ -164,7 +170,13 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 			return HandleUseCaseError(c, err)
 		}
 		h.logger.Sugar().Infof("Generated Spotify auth URL for linking")
-		return SendSuccess(c, http.StatusOK, h.mapper.ToSpotifyAuthURLResponse(response))
+
+		// Check if client accepts JSON
+		acceptHeader := c.Request().Header.Get("Accept")
+		if acceptHeader == string(ContentTypeApplicationJson) || c.Request().Header.Get("Content-Type") == string(ContentTypeApplicationJson) {
+			return SendSuccess(c, http.StatusOK, h.mapper.ToSpotifyAuthURLResponse(response))
+		}
+		return c.Redirect(http.StatusFound, response.URL)
 	}
 
 	// Regular login flow
@@ -175,7 +187,13 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 	}
 
 	h.logger.Sugar().Infof("Generated Spotify auth URL")
-	return SendSuccess(c, http.StatusOK, h.mapper.ToSpotifyAuthURLResponse(response))
+
+	// Check if client accepts JSON
+	acceptHeader := c.Request().Header.Get("Accept")
+	if acceptHeader == string(ContentTypeApplicationJson) || c.Request().Header.Get("Content-Type") == string(ContentTypeApplicationJson) {
+		return SendSuccess(c, http.StatusOK, h.mapper.ToSpotifyAuthURLResponse(response))
+	}
+	return c.Redirect(http.StatusFound, response.URL)
 }
 
 func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
