@@ -1,0 +1,1 @@
+- Follow Clean Architecture and Clean Code

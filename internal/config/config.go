@@ -9,6 +9,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Enviroment string
+
+const (
+	Development Enviroment = "development"
+	Production  Enviroment = "production"
+	Staging     Enviroment = "staging"
+	Test        Enviroment = "test"
+)
+
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
@@ -21,7 +30,7 @@ type Config struct {
 type ServerConfig struct {
 	Port            string
 	Host            string
-	Environment     string
+	Environment     Enviroment
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	ShutdownTimeout time.Duration
@@ -57,10 +66,9 @@ type AppleConfig struct {
 }
 
 type JWTConfig struct {
-	AccessTokenSecret          string
-	RefreshTokenSecret         string
-	AccessTokenExpirationTime  time.Duration
-	RefreshTokenExpirationTime time.Duration
+	Secret                string
+	ExpirationTime        time.Duration
+	RefreshExpirationTime time.Duration
 }
 
 var (
@@ -98,7 +106,7 @@ func load() (*Config, error) {
 		Server: ServerConfig{
 			Port:            getEnv("PORT", "9000"),
 			Host:            getEnv("HOST", "localhost"),
-			Environment:     getEnv("ENVIRONMENT", "development"),
+			Environment:     Enviroment(getEnv("ENVIRONMENT", string(Development))),
 			ReadTimeout:     parseDuration(getEnv("READ_TIMEOUT", "10s")),
 			WriteTimeout:    parseDuration(getEnv("WRITE_TIMEOUT", "10s")),
 			ShutdownTimeout: parseDuration(getEnv("SHUTDOWN_TIMEOUT", "5s")),
@@ -129,10 +137,9 @@ func load() (*Config, error) {
 			RedirectURL: getEnv("APPLE_REDIRECT_URL", "http://localhost:9000/auth/apple/callback"),
 		},
 		JWT: JWTConfig{
-			AccessTokenSecret:          getEnv("JWT_ACCESS_SECRET", "your-secret-key"),
-			RefreshTokenSecret:         getEnv("JWT_REFRESH_SECRET", "your-secret-key"),
-			AccessTokenExpirationTime:  parseDuration(getEnv("JWT_ACCESS_EXPIRATION", "24h")),
-			RefreshTokenExpirationTime: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "100d")),
+			Secret:                getEnv("JWT_SECRET", "your-secret-key"),
+			ExpirationTime:        parseDuration(getEnv("JWT_EXPIRATION", "24h")),
+			RefreshExpirationTime: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "100h")),
 		},
 	}, nil
 }
@@ -147,6 +154,11 @@ func getEnv(key, defaultValue string) string {
 
 func parseInt(s string) int {
 	i, _ := strconv.Atoi(s)
+	return i
+}
+
+func parseInt64(s string) int64 {
+	i, _ := strconv.ParseInt(s, 10, 64)
 	return i
 }
 

@@ -11,55 +11,43 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
+	"github.com/zandomed/sync-playlist-api/internal/adapters/container"
+	"github.com/zandomed/sync-playlist-api/internal/adapters/http/routes"
 	"github.com/zandomed/sync-playlist-api/internal/config"
-	"github.com/zandomed/sync-playlist-api/internal/handlers"
 	SPMiddleware "github.com/zandomed/sync-playlist-api/internal/middleware"
-	"github.com/zandomed/sync-playlist-api/internal/repository"
-	"github.com/zandomed/sync-playlist-api/internal/routes"
-	"github.com/zandomed/sync-playlist-api/internal/services"
 
-	// "github.com/zandomed/sync-playlist-api/pkg/database"
 	"github.com/zandomed/sync-playlist-api/pkg/database"
-	SPLogger "github.com/zandomed/sync-playlist-api/pkg/logger"
+	"github.com/zandomed/sync-playlist-api/pkg/logger"
 )
 
 func main() {
-	// Obtener configuración singleton
 	cfg := config.Get()
 
-	// Inicializar logger
-	logger := SPLogger.New()
+	log := logger.New()
+	defer log.Sync()
 
-	// Conectar a la base de datos
-	db, err := database.Connect(&cfg.Database)
-	if err != nil {
-		logger.Sugar().Fatalf("Error connecting to database: %v", err)
+	if cfg.Server.Environment == config.Development {
+		log.Sugar().Info("Running in development mode", cfg)
 	}
 
-	// Inicializar Echo
+	db, err := database.Connect(&cfg.Database)
+	if err != nil {
+		log.Sugar().Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	container := container.NewContainer(db, cfg, log)
+
 	e := echo.New()
-
-	// Configurar validador personalizado
-	e.Validator = &SPMiddleware.CustomValidator{Validator: validator.New()}
-
-	// Configurar Echo
 	e.HideBanner = true
+	e.Validator = &SPMiddleware.CustomValidator{Validator: validator.New()}
 	e.Use(middleware.RequestID())
-	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	e.Use(SPMiddleware.Logger())
+	e.Use(middleware.Recover())
 
-	// Inicializar dependencias
-	// repos := repository.New(db)
-	repos := repository.New(db)
-	services := services.New(repos, cfg, logger)
-	handlers := handlers.New(services, cfg, logger)
+	routes.SetupRoutes(e, container)
 
-	// Configurar rutas
-	routes.Setup(e, handlers)
-
-	// Servidor con graceful shutdown
+	// Start server
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port),
 		Handler:      e,
@@ -67,27 +55,28 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// Iniciar servidor en goroutine
+	// Graceful shutdown
 	go func() {
-		logger.Info(fmt.Sprintf("🚀 Server starting on %s:%s", cfg.Server.Host, cfg.Server.Port))
-		if err := e.StartServer(server); err != nil && err != http.ErrServerClosed {
-			logger.Sugar().Fatalf("Error starting server: %v", err)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Sugar().Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
-	// Esperar señal de interrupción
+	log.Sugar().Infof("Server started on port http://%s:%s", cfg.Server.Host, cfg.Server.Port)
+
+	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	// Graceful shutdown
-	logger.Info("🛑 Shutting down server...")
+	log.Sugar().Info("Shutting down server...")
+
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer cancel()
 
-	if err := e.Shutdown(ctx); err != nil {
-		logger.Sugar().Fatalf("Server forced to shutdown: %v", err)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Sugar().Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	logger.Info("✅ Server stopped gracefully")
+	log.Sugar().Info("Server exited")
 }

@@ -55,7 +55,7 @@ clean: ## Clean generated files
 
 docker-up: ## Start development services (PostgreSQL and Redis)
 	@echo "${YELLOW}Starting development services...${NC}"
-	@${DOCKER_COMPOSE} up -d postgres redis
+	@${DOCKER_COMPOSE} up -d
 	@echo "${GREEN}✅ Services started${NC}"
 
 docker-full: ## Start all services including the app

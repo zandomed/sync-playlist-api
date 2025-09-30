@@ -149,20 +149,16 @@ func rollbackMigration(db *sqlx.DB) error {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			log.Printf("Error rolling back transaction: %v", err)
-		}
-	}()
-
 	// Ejecutar rollback SQL
 	if _, err := tx.Exec(string(downSQL)); err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to execute rollback: %w", err)
 	}
 
 	// Remover registro de migración
 	deleteQuery := `DELETE FROM schema_migrations WHERE version = $1`
 	if _, err := tx.Exec(deleteQuery, lastVersion); err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to remove migration record: %w", err)
 	}
 
@@ -266,20 +262,16 @@ func applyMigration(db *sqlx.DB, filename, version string) error {
 		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			log.Printf("Error rolling back transaction: %v", err)
-		}
-	}()
-
 	// Ejecutar migración
 	if _, err := tx.Exec(string(content)); err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to execute migration: %w", err)
 	}
 
 	// Registrar migración como aplicada
 	insertQuery := `INSERT INTO schema_migrations (version) VALUES ($1)`
 	if _, err := tx.Exec(insertQuery, version); err != nil {
+		tx.Rollback()
 		return fmt.Errorf("failed to record migration: %w", err)
 	}
 
