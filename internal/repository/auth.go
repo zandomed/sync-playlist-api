@@ -7,6 +7,7 @@ import (
 
 type AuthRepository interface {
 	CreateUserWithUserpass(user *models.User, password string) (*string, error)
+	GetUserByEmail(email string) (*models.User, error)
 	ValidateUser(email, password string) (bool, error)
 }
 
@@ -66,4 +67,17 @@ func (r *authRepository) CreateUserWithUserpass(user *models.User, password stri
 	}
 
 	return &userID, nil
+}
+
+func (r *authRepository) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	query := `
+		SELECT id, email, name, last_name
+		FROM users
+		WHERE email = $1`
+	err := r.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Name, &user.LastName)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

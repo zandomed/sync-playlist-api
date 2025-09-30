@@ -57,8 +57,10 @@ type AppleConfig struct {
 }
 
 type JWTConfig struct {
-	Secret         string
-	ExpirationTime time.Duration
+	AccessTokenSecret          string
+	RefreshTokenSecret         string
+	AccessTokenExpirationTime  time.Duration
+	RefreshTokenExpirationTime time.Duration
 }
 
 var (
@@ -127,8 +129,10 @@ func load() (*Config, error) {
 			RedirectURL: getEnv("APPLE_REDIRECT_URL", "http://localhost:9000/auth/apple/callback"),
 		},
 		JWT: JWTConfig{
-			Secret:         getEnv("JWT_SECRET", "your-secret-key"),
-			ExpirationTime: parseDuration(getEnv("JWT_EXPIRATION", "24h")),
+			AccessTokenSecret:          getEnv("JWT_ACCESS_SECRET", "your-secret-key"),
+			RefreshTokenSecret:         getEnv("JWT_REFRESH_SECRET", "your-secret-key"),
+			AccessTokenExpirationTime:  parseDuration(getEnv("JWT_ACCESS_EXPIRATION", "24h")),
+			RefreshTokenExpirationTime: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "100d")),
 		},
 	}, nil
 }

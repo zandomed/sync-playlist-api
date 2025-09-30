@@ -18,7 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	migrationName := os.Args[1]
+	migrationName := toSnakeCase(os.Args[1])
 
 	// Validate migration name (only alphanumeric and underscores)
 	if !isValidMigrationName(migrationName) {
@@ -80,6 +80,28 @@ func main() {
 	fmt.Printf("   1. Edit %s with your migration SQL\n", upFilePath)
 	fmt.Printf("   2. Edit %s with your rollback SQL\n", downFilePath)
 	fmt.Printf("   3. Run: make migrate-up\n")
+}
+
+func toSnakeCase(str string) string {
+	// Replace spaces and hyphens with underscores
+	str = strings.ReplaceAll(str, " ", "_")
+	str = strings.ReplaceAll(str, "-", "_")
+
+	// Convert camelCase and PascalCase to snake_case
+	re := regexp.MustCompile(`([a-z0-9])([A-Z])`)
+	str = re.ReplaceAllString(str, `${1}_${2}`)
+
+	// Convert to lowercase
+	str = strings.ToLower(str)
+
+	// Remove multiple consecutive underscores
+	re = regexp.MustCompile(`_+`)
+	str = re.ReplaceAllString(str, "_")
+
+	// Remove leading and trailing underscores
+	str = strings.Trim(str, "_")
+
+	return str
 }
 
 func isValidMigrationName(name string) bool {

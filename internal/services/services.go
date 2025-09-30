@@ -21,16 +21,20 @@ import (
 // // Services contiene todos los servicios
 type Services struct {
 	// User      UserService
-	Auth AuthService
+	Auth  AuthService
+	Token TokenService
 	// Playlist  PlaylistService
 	// Migration MigrationService
 }
 
 // // New crea una nueva instancia de servicios
 func New(repos *repository.Repositories, cfg *config.Config, logger *logger.Logger) *Services {
+
+	tokenSvc := NewTokenService(cfg, logger, repos.Token)
 	return &Services{
 		// User:      NewUserService(repos.User),
-		Auth: NewAuthService(repos.Auth, cfg, logger),
+		Auth:  NewAuthService(repos.Auth, tokenSvc, cfg, logger),
+		Token: tokenSvc,
 		// Playlist:  NewPlaylistService(repos.Playlist, repos.Track),
 		// Migration: NewMigrationService(repos.Migration, repos.Playlist, repos.Track, cfg),
 	}

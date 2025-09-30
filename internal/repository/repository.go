@@ -7,7 +7,8 @@ import (
 // Repositories contiene todos los repositorios
 type Repositories struct {
 	// User      UserRepository
-	Auth AuthRepository
+	Auth  AuthRepository
+	Token TokenRepository
 	// Playlist  PlaylistRepository
 	// Track     TrackRepository
 	// Migration MigrationRepository
@@ -17,7 +18,8 @@ type Repositories struct {
 func New(db *database.DB) *Repositories {
 	return &Repositories{
 		// User:      NewUserRepository(db),
-		Auth: NewAuthRepository(db),
+		Auth:  NewAuthRepository(db),
+		Token: NewTokenRepository(db),
 		// Playlist:  NewPlaylistRepository(db),
 		// Track:     NewTrackRepository(db),
 		// Migration: NewMigrationRepository(db),

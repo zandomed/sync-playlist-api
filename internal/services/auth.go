@@ -2,9 +2,7 @@ package services
 
 import (
 	"errors"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/zandomed/sync-playlist-api/internal/config"
 	"github.com/zandomed/sync-playlist-api/internal/models"
 	"github.com/zandomed/sync-playlist-api/internal/repository"
@@ -12,20 +10,22 @@ import (
 )
 
 type AuthService interface {
-	LoginWithPass(req LoginRequest) (*LoginResponse, error)
+	LoginWithPass(req LoginRequest) (*TokenPair, error)
 	LoginWithOAuth(provider, token string) (string, error)
 	Register(req RegisterRequest) (*RegisterResponse, error)
 }
 
-type authService struct {
+type AuthServiceImpl struct {
 	authRepo repository.AuthRepository
+	tokenSvc TokenService
 	cfg      *config.Config
 	logger   *logger.Logger
 }
 
-func NewAuthService(authRepo repository.AuthRepository, cfg *config.Config, logger *logger.Logger) AuthService {
-	return &authService{
+func NewAuthService(authRepo repository.AuthRepository, tokenSvc TokenService, cfg *config.Config, logger *logger.Logger) AuthService {
+	return &AuthServiceImpl{
 		authRepo: authRepo,
+		tokenSvc: tokenSvc,
 		cfg:      cfg,
 		logger:   logger,
 	}
@@ -40,7 +40,7 @@ type LoginResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (s *authService) LoginWithPass(req LoginRequest) (*LoginResponse, error) {
+func (s *AuthServiceImpl) LoginWithPass(req LoginRequest) (*TokenPair, error) {
 
 	s.logger.Sugar().Infof("Attempting login for user: %s", req.Email)
 
@@ -55,26 +55,24 @@ func (s *authService) LoginWithPass(req LoginRequest) (*LoginResponse, error) {
 	}
 	s.logger.Sugar().Infof("User %s successfully authenticated", req.Email)
 
-	claims := jwt.RegisteredClaims{
-		Issuer:    "sync-playlist-api",
-		Subject:   req.Email,
-		Audience:  []string{"sync-playlist-client"},
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.JWT.ExpirationTime)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString([]byte(s.cfg.JWT.Secret))
+	user, err := s.authRepo.GetUserByEmail(req.Email)
 	if err != nil {
-		s.logger.Sugar().Errorf("Error signing token for user %s: %v", req.Email, err)
+		s.logger.Sugar().Errorf("Error fetching user %s: %v", req.Email, err)
 		return nil, err
 	}
+
+	tokens, err := s.tokenSvc.GenerateTokenPair(user.ID.String(), req.Email)
+	if err != nil {
+		s.logger.Sugar().Errorf("Error generating tokens for user %s: %v", req.Email, err)
+		return nil, err
+	}
+
 	// Token generation logic would go here
 	// For now, returning a placeholder token
-	return &LoginResponse{AccessToken: signedToken}, nil
+	return tokens, nil
 }
 
-func (s *authService) LoginWithOAuth(provider, token string) (string, error) {
+func (s *AuthServiceImpl) LoginWithOAuth(provider, token string) (string, error) {
 	// Implementation goes here
 	return "", nil
 }
@@ -90,7 +88,7 @@ type RegisterResponse struct {
 	ID string `json:"id"`
 }
 
-func (s *authService) Register(req RegisterRequest) (*RegisterResponse, error) {
+func (s *AuthServiceImpl) Register(req RegisterRequest) (*RegisterResponse, error) {
 	// Implementation goes here
 	s.logger.Sugar().Infof("Registering user: %s", req.Email)
 
