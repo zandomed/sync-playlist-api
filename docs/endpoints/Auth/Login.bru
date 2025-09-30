@@ -17,6 +17,11 @@ body:json {
   }
 }
 
+vars:post-response {
+  ACCESS_TOKEN: res.body.data.accessToken
+  REFRESH_TOKEN: res.body.data.refreshToken
+}
+
 settings {
   encodeUrl: true
 }
