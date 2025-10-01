@@ -1,43 +1,36 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/zandomed/sync-playlist-api/internal/adapters/http/dtos"
 	"github.com/zandomed/sync-playlist-api/internal/adapters/http/mappers"
+	"github.com/zandomed/sync-playlist-api/internal/config"
 	"github.com/zandomed/sync-playlist-api/internal/middleware"
-	"github.com/zandomed/sync-playlist-api/internal/usecases/auth"
+	"github.com/zandomed/sync-playlist-api/internal/usecases"
 	"github.com/zandomed/sync-playlist-api/pkg/logger"
 )
 
 type AuthHandler struct {
-	registerUseCase     *auth.RegisterUserUseCase
-	loginUseCase        *auth.LoginUserUseCase
-	googleLoginUseCase  *auth.GoogleLoginUseCase
-	spotifyLoginUseCase *auth.SpotifyLoginUseCase
-	linkSpotifyUseCase  *auth.LinkSpotifyAccountUseCase
-	mapper              *mappers.AuthMapper
-	logger              *logger.Logger
+	uc     *usecases.AuthUseCases
+	mapper *mappers.AuthMapper
+	cfg    *config.Config
+	logger *logger.Logger
 }
 
 func NewAuthHandler(
-	registerUseCase *auth.RegisterUserUseCase,
-	loginUseCase *auth.LoginUserUseCase,
-	googleLoginUseCase *auth.GoogleLoginUseCase,
-	spotifyLoginUseCase *auth.SpotifyLoginUseCase,
-	linkSpotifyUseCase *auth.LinkSpotifyAccountUseCase,
+	uc *usecases.AuthUseCases,
 	mapper *mappers.AuthMapper,
+	cfg *config.Config,
 	logger *logger.Logger,
 ) *AuthHandler {
 	return &AuthHandler{
-		registerUseCase:     registerUseCase,
-		loginUseCase:        loginUseCase,
-		googleLoginUseCase:  googleLoginUseCase,
-		spotifyLoginUseCase: spotifyLoginUseCase,
-		linkSpotifyUseCase:  linkSpotifyUseCase,
-		mapper:              mapper,
-		logger:              logger,
+		uc:     uc,
+		mapper: mapper,
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -55,7 +48,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	request := h.mapper.ToRegisterUserRequest(&dto)
 
-	response, err := h.registerUseCase.Execute(c.Request().Context(), *request)
+	response, err := h.uc.RegisterUserUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Registration failed: %v", err)
 		return HandleUseCaseError(c, err)
@@ -79,7 +72,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	request := h.mapper.ToLoginUserRequest(&dto)
 
-	response, err := h.loginUseCase.Execute(c.Request().Context(), *request)
+	response, err := h.uc.LoginUserUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Warnf("Login failed for user %s: %v", dto.Email, err)
 		return HandleUseCaseError(c, err)
@@ -101,7 +94,7 @@ func (h *AuthHandler) GoogleAuth(c echo.Context) error {
 
 	request := h.mapper.ToGoogleAuthURLRequest(&dto)
 
-	response, err := h.googleLoginUseCase.GetAuthURL(c.Request().Context(), *request)
+	response, err := h.uc.GoogleLoginUseCase.GetAuthURL(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Google auth URL: %v", err)
 		return HandleUseCaseError(c, err)
@@ -133,7 +126,7 @@ func (h *AuthHandler) GoogleCallback(c echo.Context) error {
 
 	request := h.mapper.ToGoogleCallbackRequest(&dto)
 
-	response, err := h.googleLoginUseCase.HandleCallback(c.Request().Context(), *request)
+	response, err := h.uc.GoogleLoginUseCase.HandleCallback(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Google callback failed: %v", err)
 		return HandleUseCaseError(c, err)
@@ -145,7 +138,16 @@ func (h *AuthHandler) GoogleCallback(c echo.Context) error {
 		h.logger.Sugar().Infof("User logged in via Google OAuth: %s", response.UserID)
 	}
 
-	return SendSuccess(c, http.StatusOK, h.mapper.ToGoogleCallbackResponse(response))
+	respObj := h.mapper.ToGoogleCallbackResponse(response)
+
+	acceptHeader := c.Request().Header.Get("Accept")
+	if acceptHeader == string(ContentTypeApplicationJson) || c.Request().Header.Get("Content-Type") == string(ContentTypeApplicationJson) {
+		return SendSuccess(c, http.StatusOK, respObj)
+	}
+
+	redirectURL := fmt.Sprintf("%s/api/auth/oauth/callback?access_token=%s&refresh_token=%s&state=%s", h.cfg.Server.FrontendURL, respObj.AccessToken, respObj.RefreshToken, state)
+
+	return c.Redirect(http.StatusFound, redirectURL)
 }
 
 func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
@@ -164,7 +166,7 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 	authHeader := c.Request().Header.Get("Authorization")
 	if authHeader != "" {
 		// This is a link request, use link use case
-		response, err := h.linkSpotifyUseCase.GetAuthURL(c.Request().Context(), *request)
+		response, err := h.uc.LinkSpotifyUseCase.GetAuthURL(c.Request().Context(), *request)
 		if err != nil {
 			h.logger.Sugar().Errorf("Failed to generate Spotify auth URL for linking: %v", err)
 			return HandleUseCaseError(c, err)
@@ -180,7 +182,7 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 	}
 
 	// Regular login flow
-	response, err := h.spotifyLoginUseCase.GetAuthURL(c.Request().Context(), *request)
+	response, err := h.uc.SpotifyLoginUseCase.GetAuthURL(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Spotify auth URL: %v", err)
 		return HandleUseCaseError(c, err)
@@ -222,7 +224,7 @@ func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
 
 		request := h.mapper.ToLinkSpotifyRequest(&dto, claims.UserID.String())
 
-		response, err := h.linkSpotifyUseCase.Execute(c.Request().Context(), *request)
+		response, err := h.uc.LinkSpotifyUseCase.Execute(c.Request().Context(), *request)
 		if err != nil {
 			h.logger.Sugar().Errorf("Spotify link failed for user %s: %v", claims.UserID, err)
 			return HandleUseCaseError(c, err)
@@ -240,7 +242,7 @@ func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
 
 	request := h.mapper.ToSpotifyCallbackRequest(&dto)
 
-	response, err := h.spotifyLoginUseCase.HandleCallback(c.Request().Context(), *request)
+	response, err := h.uc.SpotifyLoginUseCase.HandleCallback(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Spotify callback failed: %v", err)
 		return HandleUseCaseError(c, err)

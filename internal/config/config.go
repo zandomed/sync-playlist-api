@@ -35,6 +35,7 @@ type ServerConfig struct {
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
 	ShutdownTimeout time.Duration
+	FrontendURL     string
 }
 
 type DatabaseConfig struct {
@@ -117,6 +118,7 @@ func load() (*Config, error) {
 			ReadTimeout:     parseDuration(getEnv("READ_TIMEOUT", "10s")),
 			WriteTimeout:    parseDuration(getEnv("WRITE_TIMEOUT", "10s")),
 			ShutdownTimeout: parseDuration(getEnv("SHUTDOWN_TIMEOUT", "5s")),
+			FrontendURL:     getEnv("FRONTEND_URL", "http://localhost:3000"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

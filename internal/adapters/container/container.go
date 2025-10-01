@@ -7,6 +7,7 @@ import (
 	repoAdapters "github.com/zandomed/sync-playlist-api/internal/adapters/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/config"
 	"github.com/zandomed/sync-playlist-api/internal/domain/repositories"
+	"github.com/zandomed/sync-playlist-api/internal/usecases"
 	authUC "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 	healthUC "github.com/zandomed/sync-playlist-api/internal/usecases/health"
 	"github.com/zandomed/sync-playlist-api/pkg/database"
@@ -20,12 +21,12 @@ type Container struct {
 	TokenRepo   repositories.TokenRepository
 
 	// Use Cases
-	RegisterUserUC    *authUC.RegisterUserUseCase
-	LoginUserUC       *authUC.LoginUserUseCase
-	GoogleLoginUC     *authUC.GoogleLoginUseCase
-	SpotifyLoginUC    *authUC.SpotifyLoginUseCase
-	LinkSpotifyUC     *authUC.LinkSpotifyAccountUseCase
-	GetStatusUC       *healthUC.GetStatusUseCase
+	RegisterUserUC *authUC.RegisterUserUseCase
+	LoginUserUC    *authUC.LoginUserUseCase
+	GoogleLoginUC  *authUC.GoogleLoginUseCase
+	SpotifyLoginUC *authUC.SpotifyLoginUseCase
+	LinkSpotifyUC  *authUC.LinkSpotifyAccountUseCase
+	GetStatusUC    *healthUC.GetStatusUseCase
 
 	// Adapters
 	TokenGenerator authUC.TokenGenerator
@@ -75,12 +76,15 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 	authMapper := httpMappers.NewAuthMapper()
 
 	authHandler := httpHandlers.NewAuthHandler(
-		registerUserUC,
-		loginUserUC,
-		googleLoginUC,
-		spotifyLoginUC,
-		linkSpotifyUC,
+		usecases.NewAuthUseCases(
+			registerUserUC,
+			loginUserUC,
+			googleLoginUC,
+			spotifyLoginUC,
+			linkSpotifyUC,
+		),
 		authMapper,
+		cfg,
 		logger,
 	)
 

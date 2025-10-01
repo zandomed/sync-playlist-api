@@ -5,7 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
-	"github.com/zandomed/sync-playlist-api/internal/usecases/auth"
+	usecases_auth "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 )
 
 type JWTTokenGenerator struct {
@@ -14,7 +14,7 @@ type JWTTokenGenerator struct {
 	refreshTokenExpiration time.Duration
 }
 
-func NewJWTTokenGenerator(secretKey string, accessTokenExp, refreshTokenExp time.Duration) auth.TokenGenerator {
+func NewJWTTokenGenerator(secretKey string, accessTokenExp, refreshTokenExp time.Duration) usecases_auth.TokenGenerator {
 	return &JWTTokenGenerator{
 		secretKey:              secretKey,
 		accessTokenExpiration:  accessTokenExp,
