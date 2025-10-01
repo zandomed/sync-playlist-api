@@ -6,7 +6,6 @@ import (
 	httpMappers "github.com/zandomed/sync-playlist-api/internal/adapters/http/mappers"
 	repoAdapters "github.com/zandomed/sync-playlist-api/internal/adapters/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/config"
-	"github.com/zandomed/sync-playlist-api/internal/domain/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/usecases"
 	authUC "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 	healthUC "github.com/zandomed/sync-playlist-api/internal/usecases/health"
@@ -15,27 +14,6 @@ import (
 )
 
 type Container struct {
-	// Repositories
-	UserRepo    repositories.UserRepository
-	AccountRepo repositories.AccountRepository
-	TokenRepo   repositories.TokenRepository
-
-	// Use Cases
-	RegisterUserUC *authUC.RegisterUserUseCase
-	LoginUserUC    *authUC.LoginUserUseCase
-	GoogleLoginUC  *authUC.GoogleLoginUseCase
-	SpotifyLoginUC *authUC.SpotifyLoginUseCase
-	LinkSpotifyUC  *authUC.LinkSpotifyAccountUseCase
-	GetStatusUC    *healthUC.GetStatusUseCase
-
-	// Adapters
-	TokenGenerator authUC.TokenGenerator
-	GoogleOAuth    authUC.GoogleOAuthProvider
-	SpotifyOAuth   authUC.SpotifyOAuthProvider
-
-	// Mappers
-	AuthMapper *httpMappers.AuthMapper
-
 	// Handlers
 	AuthHandler   *httpHandlers.AuthHandler
 	HealthHandler *httpHandlers.HealthHandler
@@ -63,14 +41,17 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 		cfg.Spotify.ClientID,
 		cfg.Spotify.ClientSecret,
 		cfg.Spotify.RedirectURL,
+		cfg.Spotify.APIUrl,
 	)
 	spotifyOAuthAdapter := authAdapters.NewSpotifyOAuthAdapter(spotifyOAuthService)
 
 	registerUserUC := authUC.NewRegisterUserUseCase(userRepo, accountRepo)
 	loginUserUC := authUC.NewLoginUserUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator)
-	googleLoginUC := authUC.NewGoogleLoginUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, googleOAuthAdapter)
-	spotifyLoginUC := authUC.NewSpotifyLoginUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, spotifyOAuthAdapter)
+	googleLoginUC := authUC.NewLoginGoogleUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, googleOAuthAdapter)
+	spotifyLoginUC := authUC.NewLoginSpotifyUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, spotifyOAuthAdapter)
 	linkSpotifyUC := authUC.NewLinkSpotifyAccountUseCase(userRepo, accountRepo, spotifyOAuthAdapter)
+	getUrlSpotifyUC := authUC.NewGetUrlSpotifyUseCase(spotifyOAuthAdapter)
+	getUrlGoogleUC := authUC.NewGetUrlGoogleUseCase(googleOAuthAdapter)
 	getStatusUC := healthUC.NewGetStatusUseCase(cfg)
 
 	authMapper := httpMappers.NewAuthMapper()
@@ -82,6 +63,8 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 			googleLoginUC,
 			spotifyLoginUC,
 			linkSpotifyUC,
+			getUrlSpotifyUC,
+			getUrlGoogleUC,
 		),
 		authMapper,
 		cfg,
@@ -91,20 +74,7 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 	healthHandler := httpHandlers.NewHealthHandler(getStatusUC)
 
 	return &Container{
-		UserRepo:       userRepo,
-		AccountRepo:    accountRepo,
-		TokenRepo:      tokenRepo,
-		RegisterUserUC: registerUserUC,
-		LoginUserUC:    loginUserUC,
-		GoogleLoginUC:  googleLoginUC,
-		SpotifyLoginUC: spotifyLoginUC,
-		LinkSpotifyUC:  linkSpotifyUC,
-		GetStatusUC:    getStatusUC,
-		TokenGenerator: tokenGenerator,
-		GoogleOAuth:    googleOAuthAdapter,
-		SpotifyOAuth:   spotifyOAuthAdapter,
-		AuthMapper:     authMapper,
-		AuthHandler:    authHandler,
-		HealthHandler:  healthHandler,
+		AuthHandler:   authHandler,
+		HealthHandler: healthHandler,
 	}
 }

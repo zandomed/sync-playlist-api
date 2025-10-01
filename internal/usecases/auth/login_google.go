@@ -8,52 +8,39 @@ import (
 
 	"github.com/zandomed/sync-playlist-api/internal/domain/entities"
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
+	"github.com/zandomed/sync-playlist-api/internal/domain/providers"
 	"github.com/zandomed/sync-playlist-api/internal/domain/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/domain/valueobjects"
 )
 
-type GoogleAuthURLRequest struct {
-	State string
-}
-
-type GoogleAuthURLResponse struct {
-	URL string
-}
-
-type GoogleCallbackRequest struct {
+type LoginGoogleCallbackRequest struct {
 	Code  string
 	State string
 }
 
-type GoogleCallbackResponse struct {
+type LoginGoogleCallbackResponse struct {
 	AccessToken  string
 	RefreshToken string
 	UserID       string
 	IsNewUser    bool
 }
 
-type GoogleOAuthProvider interface {
-	GetAuthURL(state string) string
-	ExchangeCode(ctx context.Context, code string) (accessToken, refreshToken string, expiresAt time.Time, err error)
-	GetUserInfo(ctx context.Context, accessToken string) (email, name, familyName string, err error)
-}
-
-type GoogleLoginUseCase struct {
+type LoginGoogleUseCase struct {
 	userRepo      repositories.UserRepository
 	accountRepo   repositories.AccountRepository
 	tokenRepo     repositories.TokenRepository
 	tokenGen      TokenGenerator
-	googleService GoogleOAuthProvider
+	googleService providers.GoogleOAuthProvider
 }
 
-func NewGoogleLoginUseCase(
+func NewLoginGoogleUseCase(
 	userRepo repositories.UserRepository,
 	accountRepo repositories.AccountRepository,
 	tokenRepo repositories.TokenRepository,
 	tokenGen TokenGenerator,
-	googleService GoogleOAuthProvider,
-) *GoogleLoginUseCase {
-	return &GoogleLoginUseCase{
+	googleService providers.GoogleOAuthProvider,
+) *LoginGoogleUseCase {
+	return &LoginGoogleUseCase{
 		userRepo:      userRepo,
 		accountRepo:   accountRepo,
 		tokenRepo:     tokenRepo,
@@ -62,14 +49,7 @@ func NewGoogleLoginUseCase(
 	}
 }
 
-func (uc *GoogleLoginUseCase) GetAuthURL(ctx context.Context, req GoogleAuthURLRequest) (*GoogleAuthURLResponse, error) {
-	url := uc.googleService.GetAuthURL(req.State)
-	return &GoogleAuthURLResponse{
-		URL: url,
-	}, nil
-}
-
-func (uc *GoogleLoginUseCase) HandleCallback(ctx context.Context, req GoogleCallbackRequest) (*GoogleCallbackResponse, error) {
+func (uc *LoginGoogleUseCase) Execute(ctx context.Context, req LoginGoogleCallbackRequest) (*LoginGoogleCallbackResponse, error) {
 	// Exchange code for tokens
 	googleAccessToken, googleRefreshToken, expiresAt, err := uc.googleService.ExchangeCode(ctx, req.Code)
 	if err != nil {
@@ -154,7 +134,7 @@ func (uc *GoogleLoginUseCase) HandleCallback(ctx context.Context, req GoogleCall
 	_ = googleRefreshToken
 	_ = expiresAt
 
-	return &GoogleCallbackResponse{
+	return &LoginGoogleCallbackResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshTokenStr,
 		UserID:       user.ID().String(),
@@ -162,7 +142,7 @@ func (uc *GoogleLoginUseCase) HandleCallback(ctx context.Context, req GoogleCall
 	}, nil
 }
 
-func (uc *GoogleLoginUseCase) getRefreshTokenExpirationTime() time.Time {
+func (uc *LoginGoogleUseCase) getRefreshTokenExpirationTime() time.Time {
 	return time.Now().Add(time.Duration(uc.tokenGen.GetRefreshTokenExpiration()) * time.Second)
 }
 

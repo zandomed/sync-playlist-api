@@ -72,7 +72,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	request := h.mapper.ToLoginUserRequest(&dto)
 
-	response, err := h.uc.LoginUserUseCase.Execute(c.Request().Context(), *request)
+	response, err := h.uc.LoginUserPassUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Warnf("Login failed for user %s: %v", dto.Email, err)
 		return HandleUseCaseError(c, err)
@@ -94,7 +94,7 @@ func (h *AuthHandler) GoogleAuth(c echo.Context) error {
 
 	request := h.mapper.ToGoogleAuthURLRequest(&dto)
 
-	response, err := h.uc.GoogleLoginUseCase.GetAuthURL(c.Request().Context(), *request)
+	response, err := h.uc.GetUrlGoogleUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Google auth URL: %v", err)
 		return HandleUseCaseError(c, err)
@@ -126,7 +126,7 @@ func (h *AuthHandler) GoogleCallback(c echo.Context) error {
 
 	request := h.mapper.ToGoogleCallbackRequest(&dto)
 
-	response, err := h.uc.GoogleLoginUseCase.HandleCallback(c.Request().Context(), *request)
+	response, err := h.uc.LoginGoogleUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Google callback failed: %v", err)
 		return HandleUseCaseError(c, err)
@@ -182,7 +182,7 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 	}
 
 	// Regular login flow
-	response, err := h.uc.SpotifyLoginUseCase.GetAuthURL(c.Request().Context(), *request)
+	response, err := h.uc.GetUrlSpotifyUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Spotify auth URL: %v", err)
 		return HandleUseCaseError(c, err)
@@ -242,7 +242,7 @@ func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
 
 	request := h.mapper.ToSpotifyCallbackRequest(&dto)
 
-	response, err := h.uc.SpotifyLoginUseCase.HandleCallback(c.Request().Context(), *request)
+	response, err := h.uc.LoginSpotifyUseCase.Execute(c.Request().Context(), *request)
 	if err != nil {
 		h.logger.Sugar().Errorf("Spotify callback failed: %v", err)
 		return HandleUseCaseError(c, err)

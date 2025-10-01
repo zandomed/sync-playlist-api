@@ -42,26 +42,26 @@ func (m *AuthMapper) ToLoginResponse(ucResponse *authUC.LoginUserResponse) *dtos
 	}
 }
 
-func (m *AuthMapper) ToGoogleAuthURLRequest(dto *dtos.GoogleAuthURLRequest) *authUC.GoogleAuthURLRequest {
-	return &authUC.GoogleAuthURLRequest{
+func (m *AuthMapper) ToGoogleAuthURLRequest(dto *dtos.GoogleAuthURLRequest) *authUC.GetUrlGoogleRequest {
+	return &authUC.GetUrlGoogleRequest{
 		State: dto.State,
 	}
 }
 
-func (m *AuthMapper) ToGoogleAuthURLResponse(ucResponse *authUC.GoogleAuthURLResponse) *dtos.GoogleAuthURLResponse {
+func (m *AuthMapper) ToGoogleAuthURLResponse(ucResponse *authUC.GetUrlGoogleResponse) *dtos.GoogleAuthURLResponse {
 	return &dtos.GoogleAuthURLResponse{
 		URL: ucResponse.URL,
 	}
 }
 
-func (m *AuthMapper) ToGoogleCallbackRequest(dto *dtos.GoogleCallbackRequest) *authUC.GoogleCallbackRequest {
-	return &authUC.GoogleCallbackRequest{
+func (m *AuthMapper) ToGoogleCallbackRequest(dto *dtos.GoogleCallbackRequest) *authUC.LoginGoogleCallbackRequest {
+	return &authUC.LoginGoogleCallbackRequest{
 		Code:  dto.Code,
 		State: dto.State,
 	}
 }
 
-func (m *AuthMapper) ToGoogleCallbackResponse(ucResponse *authUC.GoogleCallbackResponse) *dtos.GoogleCallbackResponse {
+func (m *AuthMapper) ToGoogleCallbackResponse(ucResponse *authUC.LoginGoogleCallbackResponse) *dtos.GoogleCallbackResponse {
 	return &dtos.GoogleCallbackResponse{
 		AccessToken:  ucResponse.AccessToken,
 		RefreshToken: ucResponse.RefreshToken,
@@ -70,26 +70,26 @@ func (m *AuthMapper) ToGoogleCallbackResponse(ucResponse *authUC.GoogleCallbackR
 	}
 }
 
-func (m *AuthMapper) ToSpotifyAuthURLRequest(dto *dtos.SpotifyAuthURLRequest) *authUC.SpotifyAuthURLRequest {
-	return &authUC.SpotifyAuthURLRequest{
+func (m *AuthMapper) ToSpotifyAuthURLRequest(dto *dtos.SpotifyAuthURLRequest) *authUC.GetUrlSpotifyRequest {
+	return &authUC.GetUrlSpotifyRequest{
 		State: dto.State,
 	}
 }
 
-func (m *AuthMapper) ToSpotifyAuthURLResponse(ucResponse *authUC.SpotifyAuthURLResponse) *dtos.SpotifyAuthURLResponse {
+func (m *AuthMapper) ToSpotifyAuthURLResponse(ucResponse *authUC.GetUrlSpotifyResponse) *dtos.SpotifyAuthURLResponse {
 	return &dtos.SpotifyAuthURLResponse{
 		URL: ucResponse.URL,
 	}
 }
 
-func (m *AuthMapper) ToSpotifyCallbackRequest(dto *dtos.SpotifyCallbackRequest) *authUC.SpotifyCallbackRequest {
-	return &authUC.SpotifyCallbackRequest{
+func (m *AuthMapper) ToSpotifyCallbackRequest(dto *dtos.SpotifyCallbackRequest) *authUC.LoginSpotifyCallbackRequest {
+	return &authUC.LoginSpotifyCallbackRequest{
 		Code:  dto.Code,
 		State: dto.State,
 	}
 }
 
-func (m *AuthMapper) ToSpotifyCallbackResponse(ucResponse *authUC.SpotifyCallbackResponse) *dtos.SpotifyCallbackResponse {
+func (m *AuthMapper) ToSpotifyCallbackResponse(ucResponse *authUC.LoginSpotifyCallbackResponse) *dtos.SpotifyCallbackResponse {
 	return &dtos.SpotifyCallbackResponse{
 		AccessToken:  ucResponse.AccessToken,
 		RefreshToken: ucResponse.RefreshToken,
@@ -98,15 +98,15 @@ func (m *AuthMapper) ToSpotifyCallbackResponse(ucResponse *authUC.SpotifyCallbac
 	}
 }
 
-func (m *AuthMapper) ToLinkSpotifyRequest(dto *dtos.LinkSpotifyRequest, userID string) *authUC.LinkSpotifyRequest {
-	return &authUC.LinkSpotifyRequest{
+func (m *AuthMapper) ToLinkSpotifyRequest(dto *dtos.LinkSpotifyRequest, userID string) *authUC.LinkSpotifyAccountRequest {
+	return &authUC.LinkSpotifyAccountRequest{
 		UserID: userID,
 		Code:   dto.Code,
 		State:  dto.State,
 	}
 }
 
-func (m *AuthMapper) ToLinkSpotifyResponse(ucResponse *authUC.LinkSpotifyResponse) *dtos.LinkSpotifyResponse {
+func (m *AuthMapper) ToLinkSpotifyResponse(ucResponse *authUC.LinkSpotifyAccountResponse) *dtos.LinkSpotifyResponse {
 	return &dtos.LinkSpotifyResponse{
 		Success: ucResponse.Success,
 		Message: ucResponse.Message,

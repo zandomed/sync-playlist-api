@@ -3,25 +3,31 @@ package usecases
 import authUC "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 
 type AuthUseCases struct {
-	RegisterUserUseCase *authUC.RegisterUserUseCase
-	LoginUserUseCase    *authUC.LoginUserUseCase
-	GoogleLoginUseCase  *authUC.GoogleLoginUseCase
-	SpotifyLoginUseCase *authUC.SpotifyLoginUseCase
-	LinkSpotifyUseCase  *authUC.LinkSpotifyAccountUseCase
+	RegisterUserUseCase  *authUC.RegisterUserUseCase
+	LoginUserPassUseCase *authUC.LoginUserUseCase
+	LoginGoogleUseCase   *authUC.LoginGoogleUseCase
+	LoginSpotifyUseCase  *authUC.LoginSpotifyUseCase
+	LinkSpotifyUseCase   *authUC.LinkSpotifyAccountUseCase
+	GetUrlSpotifyUseCase *authUC.GetUrlSpotifyUseCase
+	GetUrlGoogleUseCase  *authUC.GetUrlGoogleUseCase
 }
 
 func NewAuthUseCases(
 	registerUserUC *authUC.RegisterUserUseCase,
 	loginUserUC *authUC.LoginUserUseCase,
-	googleLoginUC *authUC.GoogleLoginUseCase,
-	spotifyLoginUC *authUC.SpotifyLoginUseCase,
+	loginGoogleUC *authUC.LoginGoogleUseCase,
+	loginSpotifyUC *authUC.LoginSpotifyUseCase,
 	linkSpotifyUC *authUC.LinkSpotifyAccountUseCase,
+	getUrlSpotifyUC *authUC.GetUrlSpotifyUseCase,
+	getUrlGoogleUC *authUC.GetUrlGoogleUseCase,
 ) *AuthUseCases {
 	return &AuthUseCases{
-		RegisterUserUseCase: registerUserUC,
-		LoginUserUseCase:    loginUserUC,
-		GoogleLoginUseCase:  googleLoginUC,
-		SpotifyLoginUseCase: spotifyLoginUC,
-		LinkSpotifyUseCase:  linkSpotifyUC,
+		RegisterUserUseCase:  registerUserUC,
+		LoginUserPassUseCase: loginUserUC,
+		LoginGoogleUseCase:   loginGoogleUC,
+		LoginSpotifyUseCase:  loginSpotifyUC,
+		LinkSpotifyUseCase:   linkSpotifyUC,
+		GetUrlSpotifyUseCase: getUrlSpotifyUC,
+		GetUrlGoogleUseCase:  getUrlGoogleUC,
 	}
 }

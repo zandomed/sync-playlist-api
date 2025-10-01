@@ -7,52 +7,39 @@ import (
 
 	"github.com/zandomed/sync-playlist-api/internal/domain/entities"
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
+	"github.com/zandomed/sync-playlist-api/internal/domain/providers"
 	"github.com/zandomed/sync-playlist-api/internal/domain/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/domain/valueobjects"
 )
 
-type SpotifyAuthURLRequest struct {
-	State string
-}
-
-type SpotifyAuthURLResponse struct {
-	URL string
-}
-
-type SpotifyCallbackRequest struct {
+type LoginSpotifyCallbackRequest struct {
 	Code  string
 	State string
 }
 
-type SpotifyCallbackResponse struct {
+type LoginSpotifyCallbackResponse struct {
 	AccessToken  string
 	RefreshToken string
 	UserID       string
 	IsNewUser    bool
 }
 
-type SpotifyOAuthProvider interface {
-	GetAuthURL(state string) string
-	ExchangeCode(ctx context.Context, code string) (accessToken, refreshToken string, expiresAt time.Time, err error)
-	GetUserInfo(ctx context.Context, accessToken string) (email, displayName string, err error)
-}
-
-type SpotifyLoginUseCase struct {
+type LoginSpotifyUseCase struct {
 	userRepo       repositories.UserRepository
 	accountRepo    repositories.AccountRepository
 	tokenRepo      repositories.TokenRepository
 	tokenGen       TokenGenerator
-	spotifyService SpotifyOAuthProvider
+	spotifyService providers.SpotifyOAuthProvider
 }
 
-func NewSpotifyLoginUseCase(
+func NewLoginSpotifyUseCase(
 	userRepo repositories.UserRepository,
 	accountRepo repositories.AccountRepository,
 	tokenRepo repositories.TokenRepository,
 	tokenGen TokenGenerator,
-	spotifyService SpotifyOAuthProvider,
-) *SpotifyLoginUseCase {
-	return &SpotifyLoginUseCase{
+	spotifyService providers.SpotifyOAuthProvider,
+) *LoginSpotifyUseCase {
+	return &LoginSpotifyUseCase{
 		userRepo:       userRepo,
 		accountRepo:    accountRepo,
 		tokenRepo:      tokenRepo,
@@ -61,14 +48,7 @@ func NewSpotifyLoginUseCase(
 	}
 }
 
-func (uc *SpotifyLoginUseCase) GetAuthURL(ctx context.Context, req SpotifyAuthURLRequest) (*SpotifyAuthURLResponse, error) {
-	url := uc.spotifyService.GetAuthURL(req.State)
-	return &SpotifyAuthURLResponse{
-		URL: url,
-	}, nil
-}
-
-func (uc *SpotifyLoginUseCase) HandleCallback(ctx context.Context, req SpotifyCallbackRequest) (*SpotifyCallbackResponse, error) {
+func (uc *LoginSpotifyUseCase) Execute(ctx context.Context, req LoginSpotifyCallbackRequest) (*LoginSpotifyCallbackResponse, error) {
 	// Exchange code for tokens
 	spotifyAccessToken, spotifyRefreshToken, expiresAt, err := uc.spotifyService.ExchangeCode(ctx, req.Code)
 	if err != nil {
@@ -158,7 +138,7 @@ func (uc *SpotifyLoginUseCase) HandleCallback(ctx context.Context, req SpotifyCa
 	_ = spotifyRefreshToken
 	_ = expiresAt
 
-	return &SpotifyCallbackResponse{
+	return &LoginSpotifyCallbackResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshTokenStr,
 		UserID:       user.ID().String(),
@@ -166,6 +146,6 @@ func (uc *SpotifyLoginUseCase) HandleCallback(ctx context.Context, req SpotifyCa
 	}, nil
 }
 
-func (uc *SpotifyLoginUseCase) getRefreshTokenExpirationTime() time.Time {
+func (uc *LoginSpotifyUseCase) getRefreshTokenExpirationTime() time.Time {
 	return time.Now().Add(time.Duration(uc.tokenGen.GetRefreshTokenExpiration()) * time.Second)
 }

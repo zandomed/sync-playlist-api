@@ -13,6 +13,7 @@ import (
 
 type SpotifyOAuthService struct {
 	config *oauth2.Config
+	APIUrl string
 }
 
 type SpotifyUserInfo struct {
@@ -26,7 +27,7 @@ type SpotifyUserInfo struct {
 	} `json:"images"`
 }
 
-func NewSpotifyOAuthService(clientID, clientSecret, redirectURL string) *SpotifyOAuthService {
+func NewSpotifyOAuthService(clientID, clientSecret, redirectURL, apiUrl string) *SpotifyOAuthService {
 	return &SpotifyOAuthService{
 		config: &oauth2.Config{
 			ClientID:     clientID,
@@ -40,6 +41,7 @@ func NewSpotifyOAuthService(clientID, clientSecret, redirectURL string) *Spotify
 			},
 			Endpoint: spotify.Endpoint,
 		},
+		APIUrl: apiUrl,
 	}
 }
 
@@ -58,7 +60,7 @@ func (s *SpotifyOAuthService) ExchangeCode(ctx context.Context, code string) (*o
 func (s *SpotifyOAuthService) GetUserInfo(ctx context.Context, token *oauth2.Token) (*SpotifyUserInfo, error) {
 	client := s.config.Client(ctx, token)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.spotify.com/v1/me", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/me", s.APIUrl), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

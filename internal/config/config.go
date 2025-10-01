@@ -58,6 +58,7 @@ type SpotifyConfig struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
+	APIUrl       string
 }
 
 type AppleConfig struct {
@@ -138,6 +139,7 @@ func load() (*Config, error) {
 			ClientID:     getEnv("SPOTIFY_CLIENT_ID", ""),
 			ClientSecret: getEnv("SPOTIFY_CLIENT_SECRET", ""),
 			RedirectURL:  getEnv("SPOTIFY_REDIRECT_URL", "http://127.0.0.1:8080/v1/auth/spotify/callback"),
+			APIUrl:       getEnv("SPOTIFY_URL_API", "https://api.spotify.com/v1"),
 		},
 		Apple: AppleConfig{
 			TeamID:      getEnv("APPLE_TEAM_ID", ""),

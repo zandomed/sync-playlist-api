@@ -6,17 +6,18 @@ import (
 
 	"github.com/zandomed/sync-playlist-api/internal/domain/entities"
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
+	"github.com/zandomed/sync-playlist-api/internal/domain/providers"
 	"github.com/zandomed/sync-playlist-api/internal/domain/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/domain/valueobjects"
 )
 
-type LinkSpotifyRequest struct {
+type LinkSpotifyAccountRequest struct {
 	UserID string
 	Code   string
 	State  string
 }
 
-type LinkSpotifyResponse struct {
+type LinkSpotifyAccountResponse struct {
 	Success bool
 	Message string
 }
@@ -24,13 +25,13 @@ type LinkSpotifyResponse struct {
 type LinkSpotifyAccountUseCase struct {
 	userRepo       repositories.UserRepository
 	accountRepo    repositories.AccountRepository
-	spotifyService SpotifyOAuthProvider
+	spotifyService providers.SpotifyOAuthProvider
 }
 
 func NewLinkSpotifyAccountUseCase(
 	userRepo repositories.UserRepository,
 	accountRepo repositories.AccountRepository,
-	spotifyService SpotifyOAuthProvider,
+	spotifyService providers.SpotifyOAuthProvider,
 ) *LinkSpotifyAccountUseCase {
 	return &LinkSpotifyAccountUseCase{
 		userRepo:       userRepo,
@@ -39,14 +40,14 @@ func NewLinkSpotifyAccountUseCase(
 	}
 }
 
-func (uc *LinkSpotifyAccountUseCase) GetAuthURL(ctx context.Context, req SpotifyAuthURLRequest) (*SpotifyAuthURLResponse, error) {
+func (uc *LinkSpotifyAccountUseCase) GetAuthURL(ctx context.Context, req GetUrlSpotifyRequest) (*GetUrlSpotifyResponse, error) {
 	url := uc.spotifyService.GetAuthURL(req.State)
-	return &SpotifyAuthURLResponse{
+	return &GetUrlSpotifyResponse{
 		URL: url,
 	}, nil
 }
 
-func (uc *LinkSpotifyAccountUseCase) Execute(ctx context.Context, req LinkSpotifyRequest) (*LinkSpotifyResponse, error) {
+func (uc *LinkSpotifyAccountUseCase) Execute(ctx context.Context, req LinkSpotifyAccountRequest) (*LinkSpotifyAccountResponse, error) {
 	// Validate user ID
 	userID, err := valueobjects.ParseUserID(req.UserID)
 	if err != nil {
@@ -94,7 +95,7 @@ func (uc *LinkSpotifyAccountUseCase) Execute(ctx context.Context, req LinkSpotif
 	// TODO: Store Spotify tokens (optional - for future use)
 	_, _, _ = spotifyAccessToken, spotifyRefreshToken, expiresAt
 
-	return &LinkSpotifyResponse{
+	return &LinkSpotifyAccountResponse{
 		Success: true,
 		Message: "Spotify account linked successfully",
 	}, nil
