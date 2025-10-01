@@ -5,14 +5,15 @@ import (
 	"time"
 
 	"github.com/zandomed/sync-playlist-api/internal/domain/providers"
+	services "github.com/zandomed/sync-playlist-api/internal/infra/services/auth"
 	"golang.org/x/oauth2"
 )
 
 type GoogleOAuthAdapter struct {
-	service *GoogleOAuthService
+	service *services.GoogleOAuthService
 }
 
-func NewGoogleOAuthAdapter(service *GoogleOAuthService) providers.GoogleOAuthProvider {
+func NewGoogleOAuthAdapter(service *services.GoogleOAuthService) providers.GoogleOAuthProvider {
 	return &GoogleOAuthAdapter{
 		service: service,
 	}

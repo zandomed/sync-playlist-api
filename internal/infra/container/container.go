@@ -1,11 +1,12 @@
 package container
 
 import (
-	authAdapters "github.com/zandomed/sync-playlist-api/internal/adapters/auth"
-	httpHandlers "github.com/zandomed/sync-playlist-api/internal/adapters/http/handlers"
-	httpMappers "github.com/zandomed/sync-playlist-api/internal/adapters/http/mappers"
-	repoAdapters "github.com/zandomed/sync-playlist-api/internal/adapters/repositories"
 	"github.com/zandomed/sync-playlist-api/internal/config"
+	authAdapters "github.com/zandomed/sync-playlist-api/internal/infra/adapters/auth"
+	httpHandlers "github.com/zandomed/sync-playlist-api/internal/infra/http/handlers"
+	httpMappers "github.com/zandomed/sync-playlist-api/internal/infra/http/mappers"
+	repoAdapters "github.com/zandomed/sync-playlist-api/internal/infra/repositories"
+	services "github.com/zandomed/sync-playlist-api/internal/infra/services/auth"
 	"github.com/zandomed/sync-playlist-api/internal/usecases"
 	authUC "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 	healthUC "github.com/zandomed/sync-playlist-api/internal/usecases/health"
@@ -23,6 +24,7 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 	userRepo := repoAdapters.NewPostgresUserRepository(db)
 	accountRepo := repoAdapters.NewPostgresAccountRepository(db)
 	tokenRepo := repoAdapters.NewPostgresTokenRepository(db)
+	verificationRepo := repoAdapters.NewPostgresVerificationRepository(db)
 
 	tokenGenerator := authAdapters.NewJWTTokenGenerator(
 		cfg.JWT.Secret,
@@ -30,14 +32,14 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 		cfg.JWT.RefreshExpirationTime,
 	)
 
-	googleOAuthService := authAdapters.NewGoogleOAuthService(
+	googleOAuthService := services.NewGoogleOAuthService(
 		cfg.Google.ClientID,
 		cfg.Google.ClientSecret,
 		cfg.Google.RedirectURL,
 	)
 	googleOAuthAdapter := authAdapters.NewGoogleOAuthAdapter(googleOAuthService)
 
-	spotifyOAuthService := authAdapters.NewSpotifyOAuthService(
+	spotifyOAuthService := services.NewSpotifyOAuthService(
 		cfg.Spotify.ClientID,
 		cfg.Spotify.ClientSecret,
 		cfg.Spotify.RedirectURL,
@@ -45,13 +47,18 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 	)
 	spotifyOAuthAdapter := authAdapters.NewSpotifyOAuthAdapter(spotifyOAuthService)
 
+	// State Expiration
+	expirationTimeForOAuthState := cfg.OAuth.TokenExpiration
+	expirationTimeForFrontendOAuth := cfg.OAuth.FrontendTokenExpiration
+
 	registerUserUC := authUC.NewRegisterUserUseCase(userRepo, accountRepo)
 	loginUserUC := authUC.NewLoginUserUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator)
-	googleLoginUC := authUC.NewLoginGoogleUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, googleOAuthAdapter)
-	spotifyLoginUC := authUC.NewLoginSpotifyUseCase(userRepo, accountRepo, tokenRepo, tokenGenerator, spotifyOAuthAdapter)
+	googleLoginUC := authUC.NewLoginGoogleUseCase(userRepo, accountRepo, tokenRepo, verificationRepo, tokenGenerator, googleOAuthAdapter, expirationTimeForFrontendOAuth)
+	spotifyLoginUC := authUC.NewLoginSpotifyUseCase(userRepo, accountRepo, tokenRepo, verificationRepo, tokenGenerator, spotifyOAuthAdapter, expirationTimeForFrontendOAuth)
 	linkSpotifyUC := authUC.NewLinkSpotifyAccountUseCase(userRepo, accountRepo, spotifyOAuthAdapter)
-	getUrlSpotifyUC := authUC.NewGetUrlSpotifyUseCase(spotifyOAuthAdapter)
-	getUrlGoogleUC := authUC.NewGetUrlGoogleUseCase(googleOAuthAdapter)
+	getUrlSpotifyUC := authUC.NewGetUrlSpotifyUseCase(spotifyOAuthAdapter, verificationRepo, expirationTimeForOAuthState)
+	getUrlGoogleUC := authUC.NewGetUrlGoogleUseCase(googleOAuthAdapter, verificationRepo, expirationTimeForOAuthState)
+	verifyTokenUC := authUC.NewVerifyTokenUseCase(verificationRepo)
 	getStatusUC := healthUC.NewGetStatusUseCase(cfg)
 
 	authMapper := httpMappers.NewAuthMapper()
@@ -65,6 +72,7 @@ func NewContainer(db *database.DB, cfg *config.Config, logger *logger.Logger) *C
 			linkSpotifyUC,
 			getUrlSpotifyUC,
 			getUrlGoogleUC,
+			verifyTokenUC,
 		),
 		authMapper,
 		cfg,

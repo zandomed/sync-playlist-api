@@ -26,6 +26,7 @@ type Config struct {
 	Apple    AppleConfig
 	Google   GoogleConfig
 	JWT      JWTConfig
+	OAuth    OAuthConfig
 }
 
 type ServerConfig struct {
@@ -78,6 +79,11 @@ type JWTConfig struct {
 	Secret                string
 	ExpirationTime        time.Duration
 	RefreshExpirationTime time.Duration
+}
+
+type OAuthConfig struct {
+	TokenExpiration         time.Duration
+	FrontendTokenExpiration time.Duration
 }
 
 var (
@@ -156,6 +162,10 @@ func load() (*Config, error) {
 			Secret:                getEnv("JWT_SECRET", "your-secret-key"),
 			ExpirationTime:        parseDuration(getEnv("JWT_EXPIRATION", "24h")),
 			RefreshExpirationTime: parseDuration(getEnv("JWT_REFRESH_EXPIRATION", "100h")),
+		},
+		OAuth: OAuthConfig{
+			TokenExpiration:         parseDuration(getEnv("OAUTH_TOKEN_EXPIRATION", "5m")),
+			FrontendTokenExpiration: parseDuration(getEnv("FRONTEND_OAUTH_TOKEN_EXPIRATION", "15m")),
 		},
 	}, nil
 }

@@ -1,7 +1,7 @@
 package mappers
 
 import (
-	"github.com/zandomed/sync-playlist-api/internal/adapters/http/dtos"
+	"github.com/zandomed/sync-playlist-api/internal/infra/http/dtos"
 	authUC "github.com/zandomed/sync-playlist-api/internal/usecases/auth"
 )
 
@@ -42,15 +42,10 @@ func (m *AuthMapper) ToLoginResponse(ucResponse *authUC.LoginUserResponse) *dtos
 	}
 }
 
-func (m *AuthMapper) ToGoogleAuthURLRequest(dto *dtos.GoogleAuthURLRequest) *authUC.GetUrlGoogleRequest {
-	return &authUC.GetUrlGoogleRequest{
-		State: dto.State,
-	}
-}
-
 func (m *AuthMapper) ToGoogleAuthURLResponse(ucResponse *authUC.GetUrlGoogleResponse) *dtos.GoogleAuthURLResponse {
 	return &dtos.GoogleAuthURLResponse{
-		URL: ucResponse.URL,
+		URL:   ucResponse.URL,
+		State: ucResponse.State,
 	}
 }
 
@@ -63,22 +58,31 @@ func (m *AuthMapper) ToGoogleCallbackRequest(dto *dtos.GoogleCallbackRequest) *a
 
 func (m *AuthMapper) ToGoogleCallbackResponse(ucResponse *authUC.LoginGoogleCallbackResponse) *dtos.GoogleCallbackResponse {
 	return &dtos.GoogleCallbackResponse{
-		AccessToken:  ucResponse.AccessToken,
-		RefreshToken: ucResponse.RefreshToken,
-		UserID:       ucResponse.UserID,
-		IsNewUser:    ucResponse.IsNewUser,
+		AccessToken:               ucResponse.AccessToken,
+		RefreshToken:              ucResponse.RefreshToken,
+		UserID:                    ucResponse.UserID,
+		IsNewUser:                 ucResponse.IsNewUser,
+		FrontendVerificationToken: ucResponse.FrontendVerificationToken,
 	}
 }
 
-func (m *AuthMapper) ToSpotifyAuthURLRequest(dto *dtos.SpotifyAuthURLRequest) *authUC.GetUrlSpotifyRequest {
-	return &authUC.GetUrlSpotifyRequest{
-		State: dto.State,
+func (m *AuthMapper) ToVerifyTokenRequest(dto *dtos.VerifyTokenRequest) *authUC.VerifyTokenRequest {
+	return &authUC.VerifyTokenRequest{
+		Token: dto.Token,
+	}
+}
+
+func (m *AuthMapper) ToVerifyTokenResponse(ucResponse *authUC.VerifyTokenResponse) *dtos.VerifyTokenResponse {
+	return &dtos.VerifyTokenResponse{
+		Valid:  ucResponse.Valid,
+		UserID: ucResponse.UserID,
 	}
 }
 
 func (m *AuthMapper) ToSpotifyAuthURLResponse(ucResponse *authUC.GetUrlSpotifyResponse) *dtos.SpotifyAuthURLResponse {
 	return &dtos.SpotifyAuthURLResponse{
-		URL: ucResponse.URL,
+		URL:   ucResponse.URL,
+		State: ucResponse.State,
 	}
 }
 
@@ -91,10 +95,11 @@ func (m *AuthMapper) ToSpotifyCallbackRequest(dto *dtos.SpotifyCallbackRequest) 
 
 func (m *AuthMapper) ToSpotifyCallbackResponse(ucResponse *authUC.LoginSpotifyCallbackResponse) *dtos.SpotifyCallbackResponse {
 	return &dtos.SpotifyCallbackResponse{
-		AccessToken:  ucResponse.AccessToken,
-		RefreshToken: ucResponse.RefreshToken,
-		UserID:       ucResponse.UserID,
-		IsNewUser:    ucResponse.IsNewUser,
+		AccessToken:               ucResponse.AccessToken,
+		RefreshToken:              ucResponse.RefreshToken,
+		UserID:                    ucResponse.UserID,
+		IsNewUser:                 ucResponse.IsNewUser,
+		FrontendVerificationToken: ucResponse.FrontendVerificationToken,
 	}
 }
 

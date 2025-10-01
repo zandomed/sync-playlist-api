@@ -40,13 +40,6 @@ func NewLinkSpotifyAccountUseCase(
 	}
 }
 
-func (uc *LinkSpotifyAccountUseCase) GetAuthURL(ctx context.Context, req GetUrlSpotifyRequest) (*GetUrlSpotifyResponse, error) {
-	url := uc.spotifyService.GetAuthURL(req.State)
-	return &GetUrlSpotifyResponse{
-		URL: url,
-	}, nil
-}
-
 func (uc *LinkSpotifyAccountUseCase) Execute(ctx context.Context, req LinkSpotifyAccountRequest) (*LinkSpotifyAccountResponse, error) {
 	// Validate user ID
 	userID, err := valueobjects.ParseUserID(req.UserID)

@@ -10,6 +10,7 @@ type AuthUseCases struct {
 	LinkSpotifyUseCase   *authUC.LinkSpotifyAccountUseCase
 	GetUrlSpotifyUseCase *authUC.GetUrlSpotifyUseCase
 	GetUrlGoogleUseCase  *authUC.GetUrlGoogleUseCase
+	VerifyTokenUseCase   *authUC.VerifyTokenUseCase
 }
 
 func NewAuthUseCases(
@@ -20,6 +21,7 @@ func NewAuthUseCases(
 	linkSpotifyUC *authUC.LinkSpotifyAccountUseCase,
 	getUrlSpotifyUC *authUC.GetUrlSpotifyUseCase,
 	getUrlGoogleUC *authUC.GetUrlGoogleUseCase,
+	verifyTokenUC *authUC.VerifyTokenUseCase,
 ) *AuthUseCases {
 	return &AuthUseCases{
 		RegisterUserUseCase:  registerUserUC,
@@ -29,5 +31,6 @@ func NewAuthUseCases(
 		LinkSpotifyUseCase:   linkSpotifyUC,
 		GetUrlSpotifyUseCase: getUrlSpotifyUC,
 		GetUrlGoogleUseCase:  getUrlGoogleUC,
+		VerifyTokenUseCase:   verifyTokenUC,
 	}
 }

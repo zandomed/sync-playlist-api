@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/http/dtos"
 	"github.com/zandomed/sync-playlist-api/internal/domain/errors"
+	"github.com/zandomed/sync-playlist-api/internal/infra/http/dtos"
 )
 
 type ContentTypeAccept string

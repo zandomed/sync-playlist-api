@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/container"
+	"github.com/zandomed/sync-playlist-api/internal/infra/container"
 	"github.com/zandomed/sync-playlist-api/internal/middleware"
 )
 
@@ -15,13 +15,18 @@ func SetupRoutes(e *echo.Echo, container *container.Container) {
 
 	api.Use(middleware.Logger())
 
+	oauth := api.Group("/oauth")
+	{
+		oauth.GET("/google", container.AuthHandler.GoogleAuth)
+		oauth.GET("/google/callback", container.AuthHandler.GoogleCallback)
+		oauth.GET("/spotify", container.AuthHandler.SpotifyAuth)
+		oauth.GET("/spotify/callback", container.AuthHandler.SpotifyCallback)
+		oauth.POST("/verify", container.AuthHandler.VerifyToken)
+	}
+
 	auth := api.Group("/auth")
 	{
 		auth.POST("/register", container.AuthHandler.Register)
 		auth.POST("/login", container.AuthHandler.Login)
-		auth.GET("/google", container.AuthHandler.GoogleAuth)
-		auth.GET("/google/callback", container.AuthHandler.GoogleCallback)
-		auth.GET("/spotify", container.AuthHandler.SpotifyAuth)
-		auth.GET("/spotify/callback", container.AuthHandler.SpotifyCallback)
 	}
 }

@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/http/dtos"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/http/mappers"
 	"github.com/zandomed/sync-playlist-api/internal/config"
+	"github.com/zandomed/sync-playlist-api/internal/infra/http/dtos"
+	"github.com/zandomed/sync-playlist-api/internal/infra/http/mappers"
 	"github.com/zandomed/sync-playlist-api/internal/middleware"
 	"github.com/zandomed/sync-playlist-api/internal/usecases"
 	"github.com/zandomed/sync-playlist-api/pkg/logger"
@@ -83,24 +83,13 @@ func (h *AuthHandler) Login(c echo.Context) error {
 }
 
 func (h *AuthHandler) GoogleAuth(c echo.Context) error {
-	var dto dtos.GoogleAuthURLRequest
-	if err := c.Bind(&dto); err != nil {
-		dto.State = "random-state"
-	}
-
-	if dto.State == "" {
-		dto.State = "random-state"
-	}
-
-	request := h.mapper.ToGoogleAuthURLRequest(&dto)
-
-	response, err := h.uc.GetUrlGoogleUseCase.Execute(c.Request().Context(), *request)
+	response, err := h.uc.GetUrlGoogleUseCase.Execute(c.Request().Context())
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Google auth URL: %v", err)
 		return HandleUseCaseError(c, err)
 	}
 
-	h.logger.Sugar().Infof("Generated Google auth URL")
+	h.logger.Sugar().Infof("Generated Google auth URL with state: %s", response.State)
 
 	// Check if client accepts JSON
 	acceptHeader := c.Request().Header.Get("Accept")
@@ -117,6 +106,11 @@ func (h *AuthHandler) GoogleCallback(c echo.Context) error {
 	if code == "" {
 		h.logger.Sugar().Warn("Missing authorization code in Google callback")
 		return SendError(c, http.StatusBadRequest, "invalid_request", "Missing authorization code")
+	}
+
+	if state == "" {
+		h.logger.Sugar().Warn("Missing state parameter in Google callback")
+		return SendError(c, http.StatusBadRequest, "invalid_request", "Missing state parameter")
 	}
 
 	dto := dtos.GoogleCallbackRequest{
@@ -145,28 +139,48 @@ func (h *AuthHandler) GoogleCallback(c echo.Context) error {
 		return SendSuccess(c, http.StatusOK, respObj)
 	}
 
-	redirectURL := fmt.Sprintf("%s/api/auth/oauth/callback?access_token=%s&refresh_token=%s&state=%s", h.cfg.Server.FrontendURL, respObj.AccessToken, respObj.RefreshToken, state)
+	redirectURL := fmt.Sprintf("%s/api/auth/oauth/callback?access_token=%s&refresh_token=%s&state=%s",
+		h.cfg.Server.FrontendURL, respObj.AccessToken, respObj.RefreshToken, respObj.FrontendVerificationToken)
 
 	return c.Redirect(http.StatusFound, redirectURL)
 }
 
-func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
-	var dto dtos.SpotifyAuthURLRequest
+func (h *AuthHandler) VerifyToken(c echo.Context) error {
+	var dto dtos.VerifyTokenRequest
 	if err := c.Bind(&dto); err != nil {
-		dto.State = "random-state"
+		h.logger.Sugar().Warnf("Invalid request body: %v", err)
+		return SendError(c, http.StatusBadRequest, "invalid_request", "Invalid request body")
 	}
 
-	if dto.State == "" {
-		dto.State = "random-state"
+	if err := c.Validate(&dto); err != nil {
+		h.logger.Sugar().Warnf("Validation failed: %v", err)
+		return SendValidationError(c, err)
 	}
 
-	request := h.mapper.ToSpotifyAuthURLRequest(&dto)
+	request := h.mapper.ToVerifyTokenRequest(&dto)
+
+	response, err := h.uc.VerifyTokenUseCase.Execute(c.Request().Context(), *request)
+	if err != nil {
+		h.logger.Sugar().Errorf("Token verification failed: %v", err)
+		return HandleUseCaseError(c, err)
+	}
+
+	if !response.Valid {
+		h.logger.Sugar().Warn("Invalid verification token provided")
+		return SendError(c, http.StatusUnauthorized, "invalid_token", "Verification token is invalid or expired")
+	}
+
+	h.logger.Sugar().Infof("Token verified successfully for user: %s", response.UserID)
+	return SendSuccess(c, http.StatusOK, h.mapper.ToVerifyTokenResponse(response))
+}
+
+func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 
 	// Check if this is a link request (user is authenticated)
 	authHeader := c.Request().Header.Get("Authorization")
 	if authHeader != "" {
 		// This is a link request, use link use case
-		response, err := h.uc.LinkSpotifyUseCase.GetAuthURL(c.Request().Context(), *request)
+		response, err := h.uc.GetUrlSpotifyUseCase.Execute(c.Request().Context())
 		if err != nil {
 			h.logger.Sugar().Errorf("Failed to generate Spotify auth URL for linking: %v", err)
 			return HandleUseCaseError(c, err)
@@ -182,7 +196,7 @@ func (h *AuthHandler) SpotifyAuth(c echo.Context) error {
 	}
 
 	// Regular login flow
-	response, err := h.uc.GetUrlSpotifyUseCase.Execute(c.Request().Context(), *request)
+	response, err := h.uc.GetUrlSpotifyUseCase.Execute(c.Request().Context())
 	if err != nil {
 		h.logger.Sugar().Errorf("Failed to generate Spotify auth URL: %v", err)
 		return HandleUseCaseError(c, err)
@@ -207,31 +221,9 @@ func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
 		return SendError(c, http.StatusBadRequest, "invalid_request", "Missing authorization code")
 	}
 
-	// Check if this is a link request (user is authenticated)
-	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader != "" {
-		// This is a link request - extract user from JWT
-		claims, err := GetUserFromJWT(c)
-		if err != nil {
-			h.logger.Sugar().Warnf("Invalid JWT token in Spotify link callback: %v", err)
-			return SendError(c, http.StatusUnauthorized, "unauthorized", "Invalid or missing authentication token")
-		}
-
-		dto := dtos.LinkSpotifyRequest{
-			Code:  code,
-			State: state,
-		}
-
-		request := h.mapper.ToLinkSpotifyRequest(&dto, claims.UserID.String())
-
-		response, err := h.uc.LinkSpotifyUseCase.Execute(c.Request().Context(), *request)
-		if err != nil {
-			h.logger.Sugar().Errorf("Spotify link failed for user %s: %v", claims.UserID, err)
-			return HandleUseCaseError(c, err)
-		}
-
-		h.logger.Sugar().Infof("Spotify account linked successfully for user: %s", claims.UserID)
-		return SendSuccess(c, http.StatusOK, h.mapper.ToLinkSpotifyResponse(response))
+	if state == "" {
+		h.logger.Sugar().Warn("Missing state parameter in Google callback")
+		return SendError(c, http.StatusBadRequest, "invalid_request", "Missing state parameter")
 	}
 
 	// Regular login flow
@@ -254,7 +246,17 @@ func (h *AuthHandler) SpotifyCallback(c echo.Context) error {
 		h.logger.Sugar().Infof("User logged in via Spotify OAuth: %s", response.UserID)
 	}
 
-	return SendSuccess(c, http.StatusOK, h.mapper.ToSpotifyCallbackResponse(response))
+	respObj := h.mapper.ToSpotifyCallbackResponse(response)
+
+	acceptHeader := c.Request().Header.Get("Accept")
+	if acceptHeader == string(ContentTypeApplicationJson) || c.Request().Header.Get("Content-Type") == string(ContentTypeApplicationJson) {
+		return SendSuccess(c, http.StatusOK, respObj)
+	}
+
+	redirectURL := fmt.Sprintf("%s/api/auth/oauth/callback?access_token=%s&refresh_token=%s&state=%s",
+		h.cfg.Server.FrontendURL, respObj.AccessToken, respObj.RefreshToken, respObj.FrontendVerificationToken)
+
+	return c.Redirect(http.StatusFound, redirectURL)
 }
 
 func GetUserFromJWT(c echo.Context) (*middleware.Claims, error) {

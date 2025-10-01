@@ -6,14 +6,15 @@ import (
 	"time"
 
 	"github.com/zandomed/sync-playlist-api/internal/domain/providers"
+	services "github.com/zandomed/sync-playlist-api/internal/infra/services/auth"
 	"golang.org/x/oauth2"
 )
 
 type SpotifyOAuthAdapter struct {
-	service *SpotifyOAuthService
+	service *services.SpotifyOAuthService
 }
 
-func NewSpotifyOAuthAdapter(service *SpotifyOAuthService) providers.SpotifyOAuthProvider {
+func NewSpotifyOAuthAdapter(service *services.SpotifyOAuthService) providers.SpotifyOAuthProvider {
 	return &SpotifyOAuthAdapter{
 		service: service,
 	}

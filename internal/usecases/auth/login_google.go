@@ -15,41 +15,70 @@ import (
 
 type LoginGoogleCallbackRequest struct {
 	Code  string
-	State string
+	State string // The state parameter is used to look up the verification token
 }
 
 type LoginGoogleCallbackResponse struct {
-	AccessToken  string
-	RefreshToken string
-	UserID       string
-	IsNewUser    bool
+	AccessToken               string
+	RefreshToken              string
+	UserID                    string
+	IsNewUser                 bool
+	FrontendVerificationToken string
 }
 
 type LoginGoogleUseCase struct {
-	userRepo      repositories.UserRepository
-	accountRepo   repositories.AccountRepository
-	tokenRepo     repositories.TokenRepository
-	tokenGen      TokenGenerator
-	googleService providers.GoogleOAuthProvider
+	userRepo         repositories.UserRepository
+	accountRepo      repositories.AccountRepository
+	tokenRepo        repositories.TokenRepository
+	verificationRepo repositories.VerificationRepository
+	tokenGen         TokenGenerator
+	googleService    providers.GoogleOAuthProvider
+	expirationState  time.Duration
 }
 
 func NewLoginGoogleUseCase(
 	userRepo repositories.UserRepository,
 	accountRepo repositories.AccountRepository,
 	tokenRepo repositories.TokenRepository,
+	verificationRepo repositories.VerificationRepository,
 	tokenGen TokenGenerator,
 	googleService providers.GoogleOAuthProvider,
+	expirationState time.Duration,
 ) *LoginGoogleUseCase {
 	return &LoginGoogleUseCase{
-		userRepo:      userRepo,
-		accountRepo:   accountRepo,
-		tokenRepo:     tokenRepo,
-		tokenGen:      tokenGen,
-		googleService: googleService,
+		userRepo:         userRepo,
+		accountRepo:      accountRepo,
+		tokenRepo:        tokenRepo,
+		verificationRepo: verificationRepo,
+		tokenGen:         tokenGen,
+		googleService:    googleService,
+		expirationState:  expirationState,
 	}
 }
 
 func (uc *LoginGoogleUseCase) Execute(ctx context.Context, req LoginGoogleCallbackRequest) (*LoginGoogleCallbackResponse, error) {
+	// Validate the state parameter by looking it up in the verification tokens table
+	// The state itself is the token for OAuth flow
+	verificationToken, err := uc.verificationRepo.FindByToken(ctx, req.State)
+	if err != nil {
+		return nil, errors.NewAuthenticationError("invalid_state", "OAuth state parameter not found or invalid")
+	}
+
+	// Validate that the token is valid for OAuth
+	if err := verificationToken.ValidateForOAuth(); err != nil {
+		return nil, err
+	}
+
+	// Mark the verification token as used (one-time use)
+	if err := verificationToken.MarkAsUsed(); err != nil {
+		return nil, err
+	}
+
+	// Update the token in the database
+	if err := uc.verificationRepo.Update(ctx, verificationToken); err != nil {
+		return nil, err
+	}
+
 	// Exchange code for tokens
 	googleAccessToken, googleRefreshToken, expiresAt, err := uc.googleService.ExchangeCode(ctx, req.Code)
 	if err != nil {
@@ -134,11 +163,23 @@ func (uc *LoginGoogleUseCase) Execute(ctx context.Context, req LoginGoogleCallba
 	_ = googleRefreshToken
 	_ = expiresAt
 
+	// Create frontend verification token (10 minutes expiration)
+	frontendToken, err := entities.NewFrontendVerificationToken(user.ID(), uc.expirationState)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store the frontend verification token
+	if err := uc.verificationRepo.Save(ctx, frontendToken); err != nil {
+		return nil, err
+	}
+
 	return &LoginGoogleCallbackResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshTokenStr,
-		UserID:       user.ID().String(),
-		IsNewUser:    isNewUser,
+		AccessToken:               accessToken,
+		RefreshToken:              refreshTokenStr,
+		UserID:                    user.ID().String(),
+		IsNewUser:                 isNewUser,
+		FrontendVerificationToken: frontendToken.Token(),
 	}, nil
 }
 

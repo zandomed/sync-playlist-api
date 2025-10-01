@@ -23,44 +23,49 @@ type LoginResponse struct {
 	UserID       string `json:"userID"`
 }
 
-type GoogleAuthURLRequest struct {
-	State string `json:"state"`
-}
-
 type GoogleAuthURLResponse struct {
-	URL string `json:"url"`
+	URL   string `json:"url"`
+	State string `json:"state"` // Server-generated state for OAuth flow
 }
 
 type GoogleCallbackRequest struct {
 	Code  string `json:"code" validate:"required"`
-	State string `json:"state"`
+	State string `json:"state" validate:"required"` // OAuth state parameter
 }
 
 type GoogleCallbackResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	UserID       string `json:"userID"`
-	IsNewUser    bool   `json:"isNewUser"`
+	AccessToken               string `json:"accessToken"`
+	RefreshToken              string `json:"refreshToken"`
+	UserID                    string `json:"userID"`
+	IsNewUser                 bool   `json:"isNewUser"`
+	FrontendVerificationToken string `json:"frontendVerificationToken"`
 }
 
-type SpotifyAuthURLRequest struct {
-	State string `json:"state"`
+type VerifyTokenRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
+type VerifyTokenResponse struct {
+	Valid  bool   `json:"valid"`
+	UserID string `json:"userId,omitempty"`
 }
 
 type SpotifyAuthURLResponse struct {
-	URL string `json:"url"`
+	URL   string `json:"url"`
+	State string `json:"state"` // Server-generated state for OAuth flow
 }
 
 type SpotifyCallbackRequest struct {
 	Code  string `json:"code" validate:"required"`
-	State string `json:"state"`
+	State string `json:"state" validate:"required"`
 }
 
 type SpotifyCallbackResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	UserID       string `json:"userID"`
-	IsNewUser    bool   `json:"isNewUser"`
+	AccessToken               string `json:"accessToken"`
+	RefreshToken              string `json:"refreshToken"`
+	UserID                    string `json:"userID"`
+	IsNewUser                 bool   `json:"isNewUser"`
+	FrontendVerificationToken string `json:"frontendVerificationToken"`
 }
 
 type LinkSpotifyRequest struct {

@@ -18,37 +18,67 @@ type LoginSpotifyCallbackRequest struct {
 }
 
 type LoginSpotifyCallbackResponse struct {
-	AccessToken  string
-	RefreshToken string
-	UserID       string
-	IsNewUser    bool
+	AccessToken               string
+	RefreshToken              string
+	UserID                    string
+	IsNewUser                 bool
+	FrontendVerificationToken string
 }
 
 type LoginSpotifyUseCase struct {
-	userRepo       repositories.UserRepository
-	accountRepo    repositories.AccountRepository
-	tokenRepo      repositories.TokenRepository
-	tokenGen       TokenGenerator
-	spotifyService providers.SpotifyOAuthProvider
+	userRepo         repositories.UserRepository
+	accountRepo      repositories.AccountRepository
+	tokenRepo        repositories.TokenRepository
+	verificationRepo repositories.VerificationRepository
+	tokenGen         TokenGenerator
+	spotifyService   providers.SpotifyOAuthProvider
+	expirationState  time.Duration
 }
 
 func NewLoginSpotifyUseCase(
 	userRepo repositories.UserRepository,
 	accountRepo repositories.AccountRepository,
 	tokenRepo repositories.TokenRepository,
+	verificationRepo repositories.VerificationRepository,
 	tokenGen TokenGenerator,
 	spotifyService providers.SpotifyOAuthProvider,
+	expirationState time.Duration,
 ) *LoginSpotifyUseCase {
 	return &LoginSpotifyUseCase{
-		userRepo:       userRepo,
-		accountRepo:    accountRepo,
-		tokenRepo:      tokenRepo,
-		tokenGen:       tokenGen,
-		spotifyService: spotifyService,
+		userRepo:         userRepo,
+		accountRepo:      accountRepo,
+		tokenRepo:        tokenRepo,
+		verificationRepo: verificationRepo,
+		tokenGen:         tokenGen,
+		spotifyService:   spotifyService,
+		expirationState:  expirationState,
 	}
 }
 
 func (uc *LoginSpotifyUseCase) Execute(ctx context.Context, req LoginSpotifyCallbackRequest) (*LoginSpotifyCallbackResponse, error) {
+
+	// Validate the state parameter by looking it up in the verification tokens table
+	// The state itself is the token for OAuth flow
+	verificationToken, err := uc.verificationRepo.FindByToken(ctx, req.State)
+	if err != nil {
+		return nil, errors.NewAuthenticationError("invalid_state", "OAuth state parameter not found or invalid")
+	}
+
+	// Validate that the token is valid for OAuth
+	if err := verificationToken.ValidateForOAuth(); err != nil {
+		return nil, err
+	}
+
+	// Mark the verification token as used (one-time use)
+	if err := verificationToken.MarkAsUsed(); err != nil {
+		return nil, err
+	}
+
+	// Update the token in the database
+	if err := uc.verificationRepo.Update(ctx, verificationToken); err != nil {
+		return nil, err
+	}
+
 	// Exchange code for tokens
 	spotifyAccessToken, spotifyRefreshToken, expiresAt, err := uc.spotifyService.ExchangeCode(ctx, req.Code)
 	if err != nil {
@@ -138,11 +168,23 @@ func (uc *LoginSpotifyUseCase) Execute(ctx context.Context, req LoginSpotifyCall
 	_ = spotifyRefreshToken
 	_ = expiresAt
 
+	// Create frontend verification token (10 minutes expiration)
+	frontendToken, err := entities.NewFrontendVerificationToken(user.ID(), uc.expirationState)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store the frontend verification token
+	if err := uc.verificationRepo.Save(ctx, frontendToken); err != nil {
+		return nil, err
+	}
+
 	return &LoginSpotifyCallbackResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshTokenStr,
-		UserID:       user.ID().String(),
-		IsNewUser:    isNewUser,
+		AccessToken:               accessToken,
+		RefreshToken:              refreshTokenStr,
+		UserID:                    user.ID().String(),
+		IsNewUser:                 isNewUser,
+		FrontendVerificationToken: frontendToken.Token(),
 	}, nil
 }
 

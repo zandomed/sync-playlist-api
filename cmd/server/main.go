@@ -12,8 +12,8 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/container"
-	"github.com/zandomed/sync-playlist-api/internal/adapters/http/routes"
+	"github.com/zandomed/sync-playlist-api/internal/infra/container"
+	"github.com/zandomed/sync-playlist-api/internal/infra/http/routes"
 	"github.com/zandomed/sync-playlist-api/internal/config"
 	SPMiddleware "github.com/zandomed/sync-playlist-api/internal/middleware"
 
